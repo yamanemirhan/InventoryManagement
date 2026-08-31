@@ -1,0 +1,3 @@
+@InventoryManagement.Api_HostAddress = http://localhost:5138
+
+GET {{InventoryManagement.Api_HostAddress}}/api/stocks/warehouse/1.5

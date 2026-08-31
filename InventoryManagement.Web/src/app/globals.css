@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@theme inline {
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { background: #f8fafc; }
+body { margin: 0; color: #0f172a; font-family: ui-sans-serif, system-ui, sans-serif; }
+button, input, select { font: inherit; }
+::selection { background: #cbd5e1; color: #0f172a; }

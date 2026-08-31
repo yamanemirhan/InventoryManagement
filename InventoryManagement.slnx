@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="docker-compose.yml" />
+  </Folder>
+  <Project Path="InventoryManagement.Api/InventoryManagement.Api.csproj" />
+  <Project Path="InventoryManagement.Application/InventoryManagement.Application.csproj" />
+  <Project Path="InventoryManagement.Domain/InventoryManagement.Domain.csproj" />
+  <Project Path="InventoryManagement.Infrastructure/InventoryManagement.Infrastructure.csproj" />
+  <Project Path="InventoryManagement.IntegrationTests/InventoryManagement.IntegrationTests.csproj" Id="45c41e0a-43be-4ddf-af9e-5c6c4b4f1a87" />
+  <Project Path="InventoryManagement.UnitTests/InventoryManagement.UnitTests.csproj" Id="4babcc87-37ec-44ee-bc71-588fbaede35a" />
+</Solution>

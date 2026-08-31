@@ -1,0 +1,59 @@
+# Visual Studio / .NET
+.vs/
+**/bin/
+**/obj/
+**/TestResults/
+**/coverage/
+**/coverage.*
+**/artifacts/
+**/publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# JetBrains / VS Code
+.idea/
+.vscode/
+*.DotSettings.user
+
+# Node.js / Next.js
+**/node_modules/
+**/.next/
+**/out/
+**/.turbo/
+**/.vercel/
+**/.npm/
+**/*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files and local secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local certificates and keys
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Local databases, logs, and temporary files
+*.db
+*.db-shm
+*.db-wal
+*.log
+tmp/
+temp/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Docker local overrides
+docker-compose.override.yml
+compose.override.yml
