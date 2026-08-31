@@ -1,0 +1,43 @@
+# Git and editor metadata
+.git/
+.gitignore
+.gitattributes
+.vs/
+.idea/
+.vscode/
+
+# .NET build output
+**/bin/
+**/obj/
+**/TestResults/
+**/coverage/
+**/coverage.*
+**/artifacts/
+**/publish/
+*.user
+*.suo
+
+# Node.js / Next.js build output
+**/node_modules/
+**/.next/
+**/out/
+**/.turbo/
+**/.npm/
+**/*.tsbuildinfo
+
+# Secrets and local configuration
+**/.env
+**/.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Local-only Compose overrides
+docker-compose.override.yml
+compose.override.yml
