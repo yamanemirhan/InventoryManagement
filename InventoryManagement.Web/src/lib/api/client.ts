@@ -2,10 +2,11 @@ import { ApiError } from "./api-error";
 import { getValidationErrors, isProblemDetails } from "./problem-details";
 
 type ApiClientOptions = Omit<RequestInit, "body"> & { body?: unknown };
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
+const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+const apiBaseUrl = configuredApiBaseUrl?.replace(/\/$/, "");
 
 export async function apiClient<T>(path: string, options: ApiClientOptions = {}): Promise<T> {
-  if (!apiBaseUrl) throw new ApiError("API address is not configured. Set NEXT_PUBLIC_API_BASE_URL.", 0, "Configuration error");
+  if (apiBaseUrl === undefined) throw new ApiError("API address is not configured. Set NEXT_PUBLIC_API_BASE_URL.", 0, "Configuration error");
 
   const headers = new Headers(options.headers);
   let body: BodyInit | undefined;
