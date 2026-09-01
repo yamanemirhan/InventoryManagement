@@ -21,8 +21,25 @@ RUN dotnet publish "InventoryManagement.Api/InventoryManagement.Api.csproj" \
     --no-restore \
     /p:UseAppHost=false
 
+# Build a deployment artifact for explicitly controlled production migrations.
+RUN dotnet tool install --tool-path /tools dotnet-ef --version 10.0.11 && \
+    ASPNETCORE_ENVIRONMENT=Production \
+    ConnectionStrings__DefaultConnection="Host=localhost;Database=inventory_bundle_build;Username=build;Password=build" \
+    /tools/dotnet-ef migrations bundle \
+        --project "InventoryManagement.Infrastructure/InventoryManagement.Infrastructure.csproj" \
+        --startup-project "InventoryManagement.Api/InventoryManagement.Api.csproj" \
+        --configuration Release \
+        --no-build \
+        --target-runtime linux-x64 \
+        --output /app/publish/efbundle \
+        --force
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends libgssapi-krb5-2 && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080

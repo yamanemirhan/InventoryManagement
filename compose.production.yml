@@ -36,6 +36,25 @@ services:
     networks:
       - inventory_network
 
+  migrate:
+    image: inventory-management-api:${IMAGE_TAG:-local}
+    profiles:
+      - migration
+    restart: "no"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:?Set POSTGRES_DB};Username=${POSTGRES_USER:?Set POSTGRES_USER};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - ./efbundle
+    command:
+      - --no-color
+      - --prefix-output
+    networks:
+      - inventory_network
+
   frontend:
     image: inventory-management-web:${IMAGE_TAG:-local}
     build:
