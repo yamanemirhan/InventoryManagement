@@ -1,5 +1,6 @@
 ﻿
 using InventoryManagement.Application.Stocks.Commands.TransferStock;
+using InventoryManagement.Application.Common.Exceptions;
 using InventoryManagement.Domain.Entities;
 using InventoryManagement.Domain.Exceptions;
 using InventoryManagement.Infrastructure.Persistence;
@@ -48,8 +49,10 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
 
         stockB.Decrease(1);
 
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() =>
+        var exception = await Assert.ThrowsAsync<ConcurrencyException>(() =>
             contextB.SaveChangesAsync());
+
+        Assert.IsType<DbUpdateConcurrencyException>(exception.InnerException);
     }
 
     [Fact]
