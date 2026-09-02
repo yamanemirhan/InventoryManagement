@@ -42,6 +42,6 @@ git merge --ff-only "${DEPLOY_SHA}"
 export IMAGE_TAG="${DEPLOY_SHA}"
 
 docker compose --env-file "${environment_file}" -f "${compose_file}" build api frontend
-docker compose --env-file "${environment_file}" -f "${compose_file}" --profile migration run --rm migrate
+docker compose --env-file "${environment_file}" -f "${compose_file}" --profile migration run --rm --no-tty migrate < /dev/null
 docker compose --env-file "${environment_file}" -f "${compose_file}" up -d --no-build --remove-orphans --wait --wait-timeout 120 postgres api frontend
 docker compose --env-file "${environment_file}" -f "${compose_file}" ps
