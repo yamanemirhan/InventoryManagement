@@ -14,7 +14,7 @@ public class StockTests
         // Act
         stock.Increase(10);
         // Assert
-        Assert.Equal(999, stock.Quantity);
+        Assert.Equal(10, stock.Quantity);
     }
 
     [Fact]
