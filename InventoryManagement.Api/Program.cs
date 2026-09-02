@@ -49,6 +49,7 @@ app.UseCors("Frontend");
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
+app.MapHealthChecks("/api/health");
 app.MapControllers();
 
 app.Run();
