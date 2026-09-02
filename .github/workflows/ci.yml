@@ -116,7 +116,7 @@ jobs:
               --resource-group "$AZURE_RESOURCE_GROUP" \
               --nsg-name "$AZURE_NSG_NAME" \
               --name "$TEMPORARY_SSH_RULE" \
-              --priority 110 \
+              --priority 130 \
               --direction Inbound \
               --access Allow \
               --protocol Tcp \
