@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddHealthChecks();
 
 builder.Services.AddControllers();
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -47,6 +48,7 @@ app.UseCors("Frontend");
 
 app.UseAuthorization();
 
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();

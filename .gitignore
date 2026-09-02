@@ -46,6 +46,8 @@ pnpm-debug.log*
 *.db-shm
 *.db-wal
 *.log
+backups/
+*.dump
 tmp/
 temp/
 
