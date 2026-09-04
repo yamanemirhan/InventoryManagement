@@ -65,14 +65,14 @@ for image in "${target_api_image}" "${target_frontend_image}"; do
   fi
 done
 
-if ! docker compose --env-file "${environment_file}" -f "${compose_file}" up -d --no-build --remove-orphans --wait --wait-timeout 120 postgres api frontend; then
+if ! docker compose --env-file "${environment_file}" -f "${compose_file}" up -d --no-build --remove-orphans --wait --wait-timeout 120 api frontend; then
   echo "Target version failed its health check. Attempting to restore the previous images." >&2
 
   if [[ "${previous_api_repository}" == "${API_IMAGE_REPOSITORY}" \
     && "${previous_frontend_repository}" == "${FRONTEND_IMAGE_REPOSITORY}" \
     && "${previous_api_tag}" == "${previous_frontend_tag}" ]]; then
     export IMAGE_TAG="${previous_api_tag}"
-    docker compose --env-file "${environment_file}" -f "${compose_file}" up -d --no-build --remove-orphans --wait --wait-timeout 120 postgres api frontend || true
+    docker compose --env-file "${environment_file}" -f "${compose_file}" up -d --no-build --remove-orphans --wait --wait-timeout 120 api frontend || true
   else
     echo "Automatic restore was skipped because the previous image references did not share one known tag." >&2
   fi

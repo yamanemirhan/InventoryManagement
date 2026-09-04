@@ -1,24 +1,6 @@
 name: inventory-management-staging
 
 services:
-  postgres:
-    image: postgres:17-alpine
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB
-      - POSTGRES_USER
-      - POSTGRES_PASSWORD
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    networks:
-      - inventory_network
-
   api:
     image: ${API_IMAGE_REPOSITORY:-inventory-management-api}:${IMAGE_TAG:-local}
     build:
@@ -28,9 +10,6 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
       interval: 10s
@@ -50,9 +29,6 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
-    depends_on:
-      postgres:
-        condition: service_healthy
     entrypoint:
       - ./efbundle
     command:
@@ -76,9 +52,6 @@ services:
       - "127.0.0.1:3001:3000"
     networks:
       - inventory_network
-
-volumes:
-  postgres_data:
 
 networks:
   inventory_network:

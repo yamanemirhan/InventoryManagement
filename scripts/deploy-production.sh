@@ -58,5 +58,5 @@ for image in "${api_image}" "${frontend_image}"; do
 done
 
 docker compose --env-file "${environment_file}" -f "${compose_file}" --profile migration run --rm --no-tty migrate < /dev/null
-docker compose --env-file "${environment_file}" -f "${compose_file}" up -d --no-build --remove-orphans --wait --wait-timeout 120 postgres api frontend
+docker compose --env-file "${environment_file}" -f "${compose_file}" up -d --no-build --remove-orphans --wait --wait-timeout 120 api frontend
 docker compose --env-file "${environment_file}" -f "${compose_file}" ps
