@@ -3,8 +3,8 @@
 set -Eeuo pipefail
 
 readonly app_directory="/opt/inventory-management"
-readonly compose_file="compose.production.yml"
-readonly environment_file=".env.production"
+readonly compose_file="compose.staging.yml"
+readonly environment_file=".env.staging"
 
 : "${DEPLOY_SHA:?DEPLOY_SHA must be provided}"
 : "${API_IMAGE_REPOSITORY:?API_IMAGE_REPOSITORY must be provided}"
@@ -31,17 +31,21 @@ if [[ ! -f "${environment_file}" ]]; then
   exit 1
 fi
 
-git fetch --prune origin "+refs/heads/main:refs/remotes/origin/main"
+git fetch --prune origin "+refs/heads/develop:refs/remotes/origin/develop"
 
-readonly remote_sha="$(git rev-parse refs/remotes/origin/main)"
+readonly remote_sha="$(git rev-parse refs/remotes/origin/develop)"
 if [[ "${remote_sha}" != "${DEPLOY_SHA}" ]]; then
-  echo "Deployment stopped because origin/main no longer matches this workflow commit." >&2
+  echo "Deployment stopped because origin/develop no longer matches this workflow commit." >&2
   echo "Expected: ${DEPLOY_SHA}" >&2
   echo "Current:  ${remote_sha}" >&2
   exit 1
 fi
 
-git checkout main
+if git show-ref --verify --quiet refs/heads/develop; then
+  git checkout develop
+else
+  git checkout --track -b develop refs/remotes/origin/develop
+fi
 git merge --ff-only "${DEPLOY_SHA}"
 
 export IMAGE_TAG="${DEPLOY_SHA}"

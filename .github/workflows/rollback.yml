@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: production-deployment
+      group: inventory-server-deployment
       cancel-in-progress: false
     permissions:
       contents: read

@@ -1,4 +1,4 @@
-name: inventory-management-production
+name: inventory-management-staging
 
 services:
   api:
@@ -8,7 +8,7 @@ services:
       dockerfile: InventoryManagement.Api/Dockerfile
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
@@ -17,7 +17,7 @@ services:
       retries: 5
       start_period: 10s
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8081:8080"
     networks:
       - inventory_network
 
@@ -27,7 +27,7 @@ services:
       - migration
     restart: "no"
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
     entrypoint:
       - ./efbundle
@@ -49,7 +49,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3001:3000"
     networks:
       - inventory_network
 

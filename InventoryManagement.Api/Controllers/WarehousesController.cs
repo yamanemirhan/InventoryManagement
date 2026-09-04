@@ -1,5 +1,6 @@
 ﻿
 using InventoryManagement.Application.Warehouses.Commands.CreateWarehouse;
+using InventoryManagement.Application.Warehouses.Queries.GetWarehouses;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,5 +16,16 @@ public class WarehousesController(ISender sender) : ControllerBase
         var id = await sender.Send(command, cancellationToken);
 
         return Ok(id);
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<WarehouseDto>>> GetAll(
+    CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(
+            new GetWarehousesQuery(),
+            cancellationToken);
+
+        return Ok(result);
     }
 }

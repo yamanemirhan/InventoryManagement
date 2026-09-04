@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - main
+      - develop
     tags:
       - "v*.*.*"
   pull_request:
     branches:
       - main
+      - develop
   workflow_dispatch:
 
 permissions:
@@ -160,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: production-deployment
+      group: inventory-server-deployment
       cancel-in-progress: false
     permissions:
       contents: read
@@ -286,6 +288,179 @@ jobs:
 
             sleep 5
           done
+
+      - name: Log out server from GitHub Container Registry
+        if: always() && steps.configure-ssh.outcome == 'success'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "docker logout ghcr.io" || true
+
+      - name: Revoke runner SSH access
+        if: always() && steps.azure-login.outcome == 'success'
+        run: |
+          if az network nsg rule show \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --nsg-name "$AZURE_NSG_NAME" \
+            --name "$TEMPORARY_SSH_RULE" > /dev/null 2>&1; then
+            az network nsg rule delete \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --nsg-name "$AZURE_NSG_NAME" \
+              --name "$TEMPORARY_SSH_RULE"
+          fi
+
+  deploy-staging:
+    name: Deploy to staging
+    needs:
+      - publish-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: inventory-server-deployment
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    env:
+      AZURE_CORE_OUTPUT: none
+      AZURE_RESOURCE_GROUP: rg-inventory-learning
+      AZURE_NSG_NAME: nsg-inventory-learning
+      TEMPORARY_SSH_RULE: Allow-SSH-GitHub-Runner
+      API_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-api
+      FRONTEND_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-web
+      STAGING_HEALTH_URL: https://staging-inventory-yamanemirhan.duckdns.org/api/health
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Log in to Azure with OIDC
+        id: azure-login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Temporarily allow runner SSH access
+        run: |
+          set -Eeuo pipefail
+
+          runner_ip="$(curl -4 --fail --silent --show-error https://api.ipify.org)"
+          if [[ ! "$runner_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+            echo "Could not determine a valid runner IPv4 address." >&2
+            exit 1
+          fi
+
+          for attempt in {1..12}; do
+            if az network nsg rule create \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --nsg-name "$AZURE_NSG_NAME" \
+              --name "$TEMPORARY_SSH_RULE" \
+              --priority 130 \
+              --direction Inbound \
+              --access Allow \
+              --protocol Tcp \
+              --source-address-prefixes "${runner_ip}/32" \
+              --source-port-ranges '*' \
+              --destination-address-prefixes '*' \
+              --destination-port-ranges 22; then
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq 12 ]]; then
+              echo "Could not create the temporary SSH rule." >&2
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+      - name: Configure SSH
+        id: configure-ssh
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
+
+      - name: Log in server to GitHub Container Registry
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+
+          for attempt in {1..12}; do
+            if printf '%s' "${GHCR_TOKEN}" \
+              | ssh \
+                  -i ~/.ssh/id_ed25519 \
+                  -o BatchMode=yes \
+                  -o ConnectTimeout=10 \
+                  "${SERVER_USER}@${SERVER_HOST}" \
+                  "docker login ghcr.io --username '${GITHUB_ACTOR}' --password-stdin"; then
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq 12 ]]; then
+              echo "Server login to GitHub Container Registry failed after waiting for SSH access." >&2
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+      - name: Deploy application
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          for attempt in {1..12}; do
+            if ssh \
+              -i ~/.ssh/id_ed25519 \
+              -o BatchMode=yes \
+              -o ConnectTimeout=10 \
+              "${SERVER_USER}@${SERVER_HOST}" \
+              "DEPLOY_SHA='${DEPLOY_SHA}' API_IMAGE_REPOSITORY='${API_IMAGE_REPOSITORY}' FRONTEND_IMAGE_REPOSITORY='${FRONTEND_IMAGE_REPOSITORY}' bash -s" \
+              < scripts/deploy-staging.sh; then
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq 12 ]]; then
+              echo "Deployment failed after waiting for SSH access." >&2
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+      - name: Verify public health endpoint
+        run: |
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 12 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            "${STAGING_HEALTH_URL}"
 
       - name: Log out server from GitHub Container Registry
         if: always() && steps.configure-ssh.outcome == 'success'
