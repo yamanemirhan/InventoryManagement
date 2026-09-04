@@ -1,6 +1,7 @@
 ﻿
 using InventoryManagement.Application.Stocks.Commands.IncreaseStock;
 using InventoryManagement.Application.Stocks.Commands.TransferStock;
+using InventoryManagement.Application.Stocks.Queries.GetStockMovementHistory;
 using InventoryManagement.Application.Stocks.Queries.GetWarehouseStock;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -29,6 +30,16 @@ public class StocksController(ISender sender) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<WarehouseStockItemDto>>> GetWarehouseStock(Guid warehouseId, CancellationToken cancellationToken)
     {
         var result = await sender.Send(new GetWarehouseStockQuery(warehouseId), cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("warehouse/{warehouseId:guid}/history")]
+    public async Task<ActionResult<IReadOnlyList<StockMovementDto>>> GetHistory(Guid warehouseId, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(
+            new GetStockMovementHistoryQuery(warehouseId),
+            cancellationToken);
 
         return Ok(result);
     }
