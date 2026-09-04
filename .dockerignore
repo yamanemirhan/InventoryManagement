@@ -35,6 +35,8 @@
 
 # Logs and temporary files
 *.log
+backups/
+*.dump
 tmp/
 temp/
 

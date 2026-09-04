@@ -13,6 +13,9 @@ if [[ ! "${DEPLOY_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
   exit 1
 fi
 
+readonly api_image="inventory-management-api:${DEPLOY_SHA}"
+readonly frontend_image="inventory-management-web:${DEPLOY_SHA}"
+
 cd "${app_directory}"
 
 if [[ -n "$(git status --porcelain)" ]]; then
@@ -41,7 +44,13 @@ git merge --ff-only "${DEPLOY_SHA}"
 
 export IMAGE_TAG="${DEPLOY_SHA}"
 
-docker compose --env-file "${environment_file}" -f "${compose_file}" build api frontend
+for image in "${api_image}" "${frontend_image}"; do
+  if ! docker image inspect "${image}" > /dev/null 2>&1; then
+    echo "Deployment stopped because the CI-built image is missing: ${image}" >&2
+    exit 1
+  fi
+done
+
 docker compose --env-file "${environment_file}" -f "${compose_file}" --profile migration run --rm --no-tty migrate < /dev/null
 docker compose --env-file "${environment_file}" -f "${compose_file}" up -d --no-build --remove-orphans --wait --wait-timeout 120 postgres api frontend
 docker compose --env-file "${environment_file}" -f "${compose_file}" ps

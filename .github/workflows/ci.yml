@@ -88,10 +88,31 @@ jobs:
       AZURE_RESOURCE_GROUP: rg-inventory-learning
       AZURE_NSG_NAME: nsg-inventory-learning
       TEMPORARY_SSH_RULE: Allow-SSH-GitHub-Runner
+      API_IMAGE: inventory-management-api:${{ github.sha }}
+      FRONTEND_IMAGE: inventory-management-web:${{ github.sha }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Build production Docker images
+        run: |
+          set -Eeuo pipefail
+
+          docker build \
+            --file InventoryManagement.Api/Dockerfile \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "${API_IMAGE}" \
+            .
+
+          docker build \
+            --file InventoryManagement.Web/Dockerfile \
+            --build-arg NEXT_PUBLIC_API_BASE_URL= \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "${FRONTEND_IMAGE}" \
+            .
+
+          docker image inspect "${API_IMAGE}" "${FRONTEND_IMAGE}" > /dev/null
 
       - name: Log in to Azure with OIDC
         id: azure-login
@@ -146,6 +167,33 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
           ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
+
+      - name: Transfer Docker images
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          set -Eeuo pipefail
+
+          for attempt in {1..12}; do
+            if docker save "${API_IMAGE}" "${FRONTEND_IMAGE}" \
+              | gzip --fast \
+              | ssh \
+                  -i ~/.ssh/id_ed25519 \
+                  -o BatchMode=yes \
+                  -o ConnectTimeout=10 \
+                  "${SERVER_USER}@${SERVER_HOST}" \
+                  "gunzip | docker load"; then
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq 12 ]]; then
+              echo "Docker image transfer failed after waiting for SSH access." >&2
+              exit 1
+            fi
+
+            sleep 5
+          done
 
       - name: Deploy application
         env:
