@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*.*.*"
   pull_request:
     branches:
       - main
@@ -69,55 +71,59 @@ jobs:
       - name: Build
         run: npm run build
 
-  deploy:
-    name: Deploy to production
+  publish-images:
+    name: Publish Docker images
     needs:
       - backend
       - frontend
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    concurrency:
-      group: production-deployment
-      cancel-in-progress: false
     permissions:
       contents: read
-      id-token: write
       packages: write
     env:
-      AZURE_CORE_OUTPUT: none
-      AZURE_RESOURCE_GROUP: rg-inventory-learning
-      AZURE_NSG_NAME: nsg-inventory-learning
-      TEMPORARY_SSH_RULE: Allow-SSH-GitHub-Runner
       API_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-api
       FRONTEND_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-web
-      API_IMAGE: ghcr.io/${{ github.repository_owner }}/inventory-management-api:${{ github.sha }}
-      FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/inventory-management-web:${{ github.sha }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Build production Docker images
+      - name: Validate semantic version tag
+        if: github.ref_type == 'tag'
         run: |
           set -Eeuo pipefail
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Release tags must use the stable SemVer format vMAJOR.MINOR.PATCH." >&2
+            exit 1
+          fi
 
-          docker build \
-            --file InventoryManagement.Api/Dockerfile \
-            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
-            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-            --tag "${API_IMAGE}" \
-            .
+      - name: Generate API image tags
+        id: api_metadata
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.API_IMAGE_REPOSITORY }}
+          flavor: latest=false
+          tags: |
+            type=sha,format=long,prefix=
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
 
-          docker build \
-            --file InventoryManagement.Web/Dockerfile \
-            --build-arg NEXT_PUBLIC_API_BASE_URL= \
-            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
-            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-            --tag "${FRONTEND_IMAGE}" \
-            .
-
-          docker image inspect "${API_IMAGE}" "${FRONTEND_IMAGE}" > /dev/null
+      - name: Generate frontend image tags
+        id: frontend_metadata
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.FRONTEND_IMAGE_REPOSITORY }}
+          flavor: latest=false
+          tags: |
+            type=sha,format=long,prefix=
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
@@ -126,11 +132,51 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Docker images
-        run: |
-          set -Eeuo pipefail
-          docker push "${API_IMAGE}"
-          docker push "${FRONTEND_IMAGE}"
+      - name: Build and push API image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: InventoryManagement.Api/Dockerfile
+          push: true
+          tags: ${{ steps.api_metadata.outputs.tags }}
+          labels: ${{ steps.api_metadata.outputs.labels }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: InventoryManagement.Web/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=
+          tags: ${{ steps.frontend_metadata.outputs.tags }}
+          labels: ${{ steps.frontend_metadata.outputs.labels }}
+
+  deploy:
+    name: Deploy to production
+    needs:
+      - publish-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    env:
+      AZURE_CORE_OUTPUT: none
+      AZURE_RESOURCE_GROUP: rg-inventory-learning
+      AZURE_NSG_NAME: nsg-inventory-learning
+      TEMPORARY_SSH_RULE: Allow-SSH-GitHub-Runner
+      API_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-api
+      FRONTEND_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-web
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
 
       - name: Log in to Azure with OIDC
         id: azure-login
