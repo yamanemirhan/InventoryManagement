@@ -7,14 +7,16 @@ readonly compose_file="compose.production.yml"
 readonly environment_file=".env.production"
 
 : "${DEPLOY_SHA:?DEPLOY_SHA must be provided}"
+: "${API_IMAGE_REPOSITORY:?API_IMAGE_REPOSITORY must be provided}"
+: "${FRONTEND_IMAGE_REPOSITORY:?FRONTEND_IMAGE_REPOSITORY must be provided}"
 
 if [[ ! "${DEPLOY_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
   echo "DEPLOY_SHA must be a full Git commit SHA." >&2
   exit 1
 fi
 
-readonly api_image="inventory-management-api:${DEPLOY_SHA}"
-readonly frontend_image="inventory-management-web:${DEPLOY_SHA}"
+readonly api_image="${API_IMAGE_REPOSITORY}:${DEPLOY_SHA}"
+readonly frontend_image="${FRONTEND_IMAGE_REPOSITORY}:${DEPLOY_SHA}"
 
 cd "${app_directory}"
 
@@ -43,6 +45,10 @@ git checkout main
 git merge --ff-only "${DEPLOY_SHA}"
 
 export IMAGE_TAG="${DEPLOY_SHA}"
+export API_IMAGE_REPOSITORY
+export FRONTEND_IMAGE_REPOSITORY
+
+docker compose --env-file "${environment_file}" -f "${compose_file}" pull api frontend
 
 for image in "${api_image}" "${frontend_image}"; do
   if ! docker image inspect "${image}" > /dev/null 2>&1; then

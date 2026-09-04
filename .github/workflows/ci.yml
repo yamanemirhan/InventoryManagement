@@ -83,13 +83,16 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: write
     env:
       AZURE_CORE_OUTPUT: none
       AZURE_RESOURCE_GROUP: rg-inventory-learning
       AZURE_NSG_NAME: nsg-inventory-learning
       TEMPORARY_SSH_RULE: Allow-SSH-GitHub-Runner
-      API_IMAGE: inventory-management-api:${{ github.sha }}
-      FRONTEND_IMAGE: inventory-management-web:${{ github.sha }}
+      API_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-api
+      FRONTEND_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-web
+      API_IMAGE: ghcr.io/${{ github.repository_owner }}/inventory-management-api:${{ github.sha }}
+      FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/inventory-management-web:${{ github.sha }}
 
     steps:
       - name: Check out repository
@@ -102,6 +105,7 @@ jobs:
           docker build \
             --file InventoryManagement.Api/Dockerfile \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
             --tag "${API_IMAGE}" \
             .
 
@@ -109,10 +113,24 @@ jobs:
             --file InventoryManagement.Web/Dockerfile \
             --build-arg NEXT_PUBLIC_API_BASE_URL= \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
             --tag "${FRONTEND_IMAGE}" \
             .
 
           docker image inspect "${API_IMAGE}" "${FRONTEND_IMAGE}" > /dev/null
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Docker images
+        run: |
+          set -Eeuo pipefail
+          docker push "${API_IMAGE}"
+          docker push "${FRONTEND_IMAGE}"
 
       - name: Log in to Azure with OIDC
         id: azure-login
@@ -157,6 +175,7 @@ jobs:
           done
 
       - name: Configure SSH
+        id: configure-ssh
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
@@ -168,27 +187,27 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
           ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
 
-      - name: Transfer Docker images
+      - name: Log in server to GitHub Container Registry
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -Eeuo pipefail
 
           for attempt in {1..12}; do
-            if docker save "${API_IMAGE}" "${FRONTEND_IMAGE}" \
-              | gzip --fast \
+            if printf '%s' "${GHCR_TOKEN}" \
               | ssh \
                   -i ~/.ssh/id_ed25519 \
                   -o BatchMode=yes \
                   -o ConnectTimeout=10 \
                   "${SERVER_USER}@${SERVER_HOST}" \
-                  "gunzip | docker load"; then
+                  "docker login ghcr.io --username '${GITHUB_ACTOR}' --password-stdin"; then
               exit 0
             fi
 
             if [[ "$attempt" -eq 12 ]]; then
-              echo "Docker image transfer failed after waiting for SSH access." >&2
+              echo "Server login to GitHub Container Registry failed after waiting for SSH access." >&2
               exit 1
             fi
 
@@ -209,7 +228,7 @@ jobs:
               -o BatchMode=yes \
               -o ConnectTimeout=10 \
               "${SERVER_USER}@${SERVER_HOST}" \
-              "DEPLOY_SHA='${DEPLOY_SHA}' bash -s" \
+              "DEPLOY_SHA='${DEPLOY_SHA}' API_IMAGE_REPOSITORY='${API_IMAGE_REPOSITORY}' FRONTEND_IMAGE_REPOSITORY='${FRONTEND_IMAGE_REPOSITORY}' bash -s" \
               < scripts/deploy-production.sh; then
               exit 0
             fi
@@ -221,6 +240,19 @@ jobs:
 
             sleep 5
           done
+
+      - name: Log out server from GitHub Container Registry
+        if: always() && steps.configure-ssh.outcome == 'success'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "docker logout ghcr.io" || true
 
       - name: Revoke runner SSH access
         if: always() && steps.azure-login.outcome == 'success'

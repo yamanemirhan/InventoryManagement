@@ -20,7 +20,7 @@ services:
       - inventory_network
 
   api:
-    image: inventory-management-api:${IMAGE_TAG:-local}
+    image: ${API_IMAGE_REPOSITORY:-inventory-management-api}:${IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: InventoryManagement.Api/Dockerfile
@@ -43,7 +43,7 @@ services:
       - inventory_network
 
   migrate:
-    image: inventory-management-api:${IMAGE_TAG:-local}
+    image: ${API_IMAGE_REPOSITORY:-inventory-management-api}:${IMAGE_TAG:-local}
     profiles:
       - migration
     restart: "no"
@@ -62,7 +62,7 @@ services:
       - inventory_network
 
   frontend:
-    image: inventory-management-web:${IMAGE_TAG:-local}
+    image: ${FRONTEND_IMAGE_REPOSITORY:-inventory-management-web}:${IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: InventoryManagement.Web/Dockerfile
