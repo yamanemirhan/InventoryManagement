@@ -64,6 +64,12 @@ namespace InventoryManagement.Infrastructure.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.Property<Guid>("WarehouseId")
                         .HasColumnType("uuid");
 

@@ -25,6 +25,8 @@ public class Stock : Entity
         if (quantity <= 0)
             throw new DomainException("Quantity must be greater than zero.");
 
+        if (quantity > int.MaxValue - Quantity)
+            throw new DomainException("Stock quantity exceeds the supported maximum.");
         Quantity += quantity;
     }
 

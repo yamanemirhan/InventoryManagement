@@ -1,4 +1,21 @@
 import { PageHeader } from "@/components/ui/page-header";
+import { LinkButton } from "@/components/ui/link-button";
 import { TransferStockForm } from "@/features/stocks/components/transfer-stock-form";
-export const metadata = { title: "Transfer stock" };
-export default function TransferStockPage() { return <><PageHeader title="Transfer stock" description="Move available product quantity between two different warehouses." /><TransferStockForm /></>; }
+import { messages as m } from "@/lib/i18n";
+export const metadata = { title: m.stocks.transfer };
+export default function Page() {
+  return (
+    <>
+      <PageHeader
+        title={m.stocks.transfer}
+        description={m.stocks.transferDescription}
+        action={
+          <LinkButton secondary href="/stocks">
+            ← {m.stocks.title}
+          </LinkButton>
+        }
+      />
+      <TransferStockForm />
+    </>
+  );
+}

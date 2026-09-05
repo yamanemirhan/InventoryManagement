@@ -11,6 +11,8 @@ export class ApiError extends Error {
   }
 
   get isConcurrencyConflict() {
-    return this.status === 409 && this.title.toLowerCase().includes("concurrency");
+    return (
+      this.status === 409 && this.title.toLowerCase().includes("concurrency")
+    );
   }
 }

@@ -23,6 +23,7 @@ public class PurchaseOrder : Entity
     public Guid WarehouseId { get; private set; }
     public PurchaseOrderStatus Status { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
+    public uint Version { get; private set; }
 
     public IReadOnlyCollection<PurchaseOrderItem> Items => _items;
 
@@ -35,6 +36,8 @@ public class PurchaseOrder : Entity
         if (Status != PurchaseOrderStatus.Draft)
             throw new DomainException("Items can only be added to draft orders.");
 
+        if (_items.Any(x => x.ProductId == productId))
+            throw new DomainException("A product can only appear once in an order.");
         _items.Add(new PurchaseOrderItem(productId, quantity, unitPrice));
     }
 
@@ -59,8 +62,8 @@ public class PurchaseOrder : Entity
 
     public void Cancel()
     {
-        if (Status == PurchaseOrderStatus.Received)
-            throw new DomainException("Received orders cannot be cancelled.");
+        if (Status is not (PurchaseOrderStatus.Draft or PurchaseOrderStatus.Ordered))
+            throw new DomainException("Only draft or ordered purchases can be cancelled.");
 
         Status = PurchaseOrderStatus.Cancelled;
     }

@@ -4,23 +4,79 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
-import { ApiError } from "@/lib/api/api-error";
 import { applyApiFieldErrors } from "@/lib/forms/apply-api-errors";
 import { getErrorMessage } from "@/lib/utils";
+import { messages as m } from "@/lib/i18n";
 import { useCreateProduct } from "../hooks/use-products";
-import { createProductSchema, type CreateProductFormValues } from "../schemas/product-schema";
-
+import {
+  createProductSchema,
+  type CreateProductFormValues,
+} from "../schemas/product-schema";
 export function CreateProductForm() {
   const router = useRouter();
   const mutation = useCreateProduct();
-  const form = useForm<CreateProductFormValues>({ resolver: zodResolver(createProductSchema), defaultValues: { name: "", sku: "" } });
+  const form = useForm<CreateProductFormValues>({
+    resolver: zodResolver(createProductSchema),
+    defaultValues: { name: "", sku: "" },
+  });
   const submit = form.handleSubmit(async (values) => {
     mutation.reset();
-    try { await mutation.mutateAsync(values); router.push("/products"); }
-    catch (error) { applyApiFieldErrors(error, form.setError, { name: "name", sku: "sku" }); }
+    try {
+      const id = await mutation.mutateAsync(values);
+      router.push(`/products/${id}`);
+    } catch (error) {
+      applyApiFieldErrors(error, form.setError, { name: "name", sku: "sku" });
+    }
   });
-  const fieldError = mutation.error instanceof ApiError && mutation.error.errors !== undefined;
-  return <form onSubmit={submit} className="max-w-2xl space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm" noValidate>{mutation.isError && !fieldError ? <Alert title="Product could not be created" tone="error">{getErrorMessage(mutation.error)}</Alert> : null}<FormField label="Name" htmlFor="name" error={form.formState.errors.name?.message}><Input id="name" autoComplete="off" placeholder="Mechanical Keyboard" {...form.register("name")} /></FormField><FormField label="SKU" htmlFor="sku" error={form.formState.errors.sku?.message}><Input id="sku" autoComplete="off" placeholder="KB-001" {...form.register("sku")} /></FormField><Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Creating..." : "Create product"}</Button></form>;
+  return (
+    <form
+      onSubmit={submit}
+      className="panel max-w-2xl space-y-6 p-7"
+      noValidate
+    >
+      {mutation.isError && (
+        <Alert title={m.common.formError} tone="error">
+          {getErrorMessage(mutation.error)}
+        </Alert>
+      )}
+      <FormField
+        label={m.common.name}
+        htmlFor="name"
+        error={form.formState.errors.name?.message}
+      >
+        <Input
+          id="name"
+          autoComplete="off"
+          placeholder={m.products.namePlaceholder}
+          {...form.register("name")}
+        />
+      </FormField>
+      <FormField
+        label={m.common.sku}
+        htmlFor="sku"
+        error={form.formState.errors.sku?.message}
+      >
+        <Input
+          id="sku"
+          autoComplete="off"
+          placeholder={m.products.skuPlaceholder}
+          {...form.register("sku")}
+        />
+      </FormField>
+      <div className="flex gap-3 border-t border-line pt-6">
+        <Button
+          type="submit"
+          disabled={mutation.isPending || form.formState.isSubmitting}
+        >
+          {mutation.isPending ? m.common.creating : m.products.create}
+        </Button>
+        <LinkButton secondary href="/products">
+          {m.common.cancel}
+        </LinkButton>
+      </div>
+    </form>
+  );
 }

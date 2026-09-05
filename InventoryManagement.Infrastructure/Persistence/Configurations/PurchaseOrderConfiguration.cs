@@ -12,6 +12,7 @@ public class PurchaseOrderConfiguration : IEntityTypeConfiguration<PurchaseOrder
         builder.ToTable("PurchaseOrders");
 
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Version).IsRowVersion();
 
         builder.Property(x => x.Status)
             .IsRequired();

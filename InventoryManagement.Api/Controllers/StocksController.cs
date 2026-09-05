@@ -12,6 +12,10 @@ namespace InventoryManagement.Api.Controllers;
 [Route("api/stocks")]
 public class StocksController(ISender sender) : ControllerBase
 {
+    [HttpGet("warehouse/{warehouseId:guid}/history/page")]
+    public async Task<IActionResult> GetHistoryPage(Guid warehouseId, CancellationToken ct, int page = 1, int pageSize = 20) =>
+        Ok(await sender.Send(new GetStockMovementHistoryPageQuery(warehouseId, page, pageSize), ct));
+
     [HttpPost("increase")]
     public async Task<IActionResult> Increase(IncreaseStockCommand command, CancellationToken cancellationToken)
     {

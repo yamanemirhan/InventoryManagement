@@ -3,6 +3,7 @@ using InventoryManagement.Application.Common.Exceptions;
 using InventoryManagement.Application.Common.Interfaces;
 using InventoryManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 
 namespace InventoryManagement.Infrastructure.Persistence;
@@ -34,6 +35,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         catch (DbUpdateConcurrencyException ex)
         {
             throw new ConcurrencyException("The data was modified by another request.", ex);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgres)
+        {
+            if (postgres.ConstraintName == "IX_Stocks_ProductId_WarehouseId")
+                throw new ConcurrencyException("Stock was created by another request. Refresh and try again.", ex);
+            throw new InvalidOperationException("A record with the same SKU or email already exists.", ex);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation })
+        {
+            throw new InvalidOperationException("A referenced record no longer exists. Refresh and try again.", ex);
         }
     }
 

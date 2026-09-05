@@ -1,13 +1,89 @@
 "use client";
 import Link from "next/link";
+import { Package, ArrowUpRight } from "lucide-react";
+import { useState } from "react";
 import { useProducts } from "../hooks/use-products";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { ListToolbar } from "@/components/ui/list-toolbar";
 import { getErrorMessage } from "@/lib/utils";
-
+import { messages as m } from "@/lib/i18n";
 export function ProductsList() {
-  const products = useProducts();
-  if (products.isPending) return <LoadingState label="Loading products..." />;
-  if (products.isError) return <ErrorState message={getErrorMessage(products.error)} onRetry={() => products.refetch()} />;
-  if (products.data.length === 0) return <EmptyState title="No products yet" description="Create the first product to start managing stock." />;
-  return <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3 font-semibold">Name</th><th className="px-5 py-3 font-semibold">SKU</th><th className="px-5 py-3 text-right font-semibold"><span className="sr-only">Action</span></th></tr></thead><tbody className="divide-y divide-slate-100">{products.data.map((product) => <tr key={product.id} className="hover:bg-slate-50"><td className="px-5 py-4 font-medium text-slate-950">{product.name}</td><td className="px-5 py-4 font-mono text-slate-600">{product.sku}</td><td className="px-5 py-4 text-right"><Link className="font-semibold text-slate-900 underline-offset-4 hover:underline" href={`/products/${product.id}`}>View</Link></td></tr>)}</tbody></table></div></div>;
+  const query = useProducts();
+  const [search, setSearch] = useState("");
+  if (query.isPending) return <LoadingState />;
+  if (query.isError)
+    return (
+      <ErrorState
+        message={getErrorMessage(query.error)}
+        onRetry={() => query.refetch()}
+      />
+    );
+  if (!query.data.length)
+    return (
+      <EmptyState
+        title={m.products.empty}
+        description={m.products.emptyDescription}
+      />
+    );
+  const rows = query.data.filter((p) =>
+    (p.name + " " + p.sku).toLowerCase().includes(search.toLowerCase()),
+  );
+  return (
+    <div className="panel overflow-hidden">
+      <ListToolbar value={search} onChange={setSearch} count={rows.length} />
+      <div className="overflow-x-auto">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>{m.common.product}</th>
+              <th>{m.common.sku}</th>
+              <th>
+                <span className="sr-only">{m.common.action}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => (
+              <tr key={p.id}>
+                <td>
+                  <Link
+                    href={`/products/${p.id}`}
+                    className="flex items-center gap-3 font-medium"
+                  >
+                    <span className="rounded-lg bg-subtle p-2.5">
+                      <Package
+                        className="size-4 text-muted"
+                        strokeWidth={1.5}
+                      />
+                    </span>
+                    {p.name}
+                  </Link>
+                </td>
+                <td>
+                  <span className="rounded-md bg-subtle px-2.5 py-1 font-mono text-xs text-muted">
+                    {p.sku}
+                  </span>
+                </td>
+                <td className="text-right">
+                  <Link
+                    href={`/products/${p.id}`}
+                    className="inline-flex items-center gap-2 text-xs font-medium text-brand"
+                  >
+                    {m.common.view}
+                    <ArrowUpRight className="size-3.5" />
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {!rows.length && (
+        <EmptyState
+          title={m.common.emptySearch}
+          description={m.common.searchHint}
+        />
+      )}
+    </div>
+  );
 }

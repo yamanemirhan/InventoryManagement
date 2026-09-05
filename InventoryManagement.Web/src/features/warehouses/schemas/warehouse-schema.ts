@@ -1,6 +1,11 @@
 import { z } from "zod";
+import { messages as m } from "@/lib/i18n";
 export const createWarehouseSchema = z.object({
-  name: z.string().trim().min(1, "Name is required.").max(150, "Name cannot exceed 150 characters."),
-  location: z.string().trim().min(1, "Location is required.").max(300, "Location cannot exceed 300 characters."),
+  name: z.string().trim().min(1, m.common.required).max(150, m.errors.maxName),
+  location: z
+    .string()
+    .trim()
+    .min(1, m.common.required)
+    .max(300, m.errors.maxLocation),
 });
 export type CreateWarehouseFormValues = z.infer<typeof createWarehouseSchema>;

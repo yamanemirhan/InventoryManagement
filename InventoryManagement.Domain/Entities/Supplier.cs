@@ -9,8 +9,8 @@ public class Supplier : Entity
 
     public Supplier(string name, string email)
     {
-        Name = name;
-        Email = email;
+        Name = name.Trim();
+        Email = email.Trim().ToLowerInvariant();
     }
 
     public string Name { get; private set; } = null!;

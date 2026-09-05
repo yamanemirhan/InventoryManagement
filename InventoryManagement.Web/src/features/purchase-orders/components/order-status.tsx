@@ -1,0 +1,24 @@
+import { messages as m } from "@/lib/i18n";
+import type { PurchaseOrderStatus } from "../types/purchase-order";
+const labels = {
+  1: m.orders.draft,
+  2: m.orders.ordered,
+  3: m.orders.received,
+  4: m.orders.cancelled,
+};
+const colors = {
+  1: "bg-subtle text-muted",
+  2: "bg-info-soft text-info",
+  3: "bg-success-soft text-success",
+  4: "bg-danger-soft text-danger",
+};
+export function OrderStatus({ status }: { status: PurchaseOrderStatus }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${colors[status]}`}
+    >
+      <span className="size-1 rounded-full bg-current" />
+      {labels[status]}
+    </span>
+  );
+}
