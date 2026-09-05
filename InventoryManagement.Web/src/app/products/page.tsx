@@ -1,6 +1,23 @@
-import Link from "next/link";
 import { Plus } from "lucide-react";
-import { ProductsList } from "@/features/products/components/products-list";
 import { PageHeader } from "@/components/ui/page-header";
-export const metadata = { title: "Products" };
-export default function ProductsPage() { return <><PageHeader title="Products" description="Products returned by the inventory API. Soft-deleted records are filtered by the backend." action={<Link href="/products/new" className="inline-flex min-h-10 items-center justify-center rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"><Plus className="mr-2 size-4" />New product</Link>} /><ProductsList /></>; }
+import { LinkButton } from "@/components/ui/link-button";
+import { ProductsList } from "@/features/products/components/products-list";
+import { messages as m } from "@/lib/i18n";
+export const metadata = { title: m.products.title };
+export default function Page() {
+  return (
+    <>
+      <PageHeader
+        title={m.products.title}
+        description={m.products.description}
+        action={
+          <LinkButton href="/products/new">
+            <Plus className="size-4" />
+            {m.products.new}
+          </LinkButton>
+        }
+      />
+      <ProductsList />
+    </>
+  );
+}

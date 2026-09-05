@@ -8,5 +8,9 @@ import { makeStore } from "@/store";
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);
   const [store] = useState(makeStore);
-  return <ReduxProvider store={store}><QueryClientProvider client={queryClient}>{children}</QueryClientProvider></ReduxProvider>;
+  return (
+    <ReduxProvider store={store}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </ReduxProvider>
+  );
 }

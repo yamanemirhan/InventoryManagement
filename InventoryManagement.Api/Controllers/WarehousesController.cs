@@ -10,6 +10,10 @@ namespace InventoryManagement.Api.Controllers;
 [Route("api/warehouses")]
 public class WarehousesController(ISender sender) : ControllerBase
 {
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<WarehouseDto>> GetById(Guid id, CancellationToken ct) =>
+        Ok(await sender.Send(new InventoryManagement.Application.Warehouses.Queries.GetWarehouseById.GetWarehouseByIdQuery(id), ct));
+
     [HttpPost]
     public async Task<ActionResult<Guid>> Create(CreateWarehouseCommand command, CancellationToken cancellationToken)
     {

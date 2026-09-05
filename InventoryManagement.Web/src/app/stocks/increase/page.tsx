@@ -1,4 +1,21 @@
 import { PageHeader } from "@/components/ui/page-header";
+import { LinkButton } from "@/components/ui/link-button";
 import { IncreaseStockForm } from "@/features/stocks/components/increase-stock-form";
-export const metadata = { title: "Increase stock" };
-export default function IncreaseStockPage() { return <><PageHeader title="Increase stock" description="Add a positive quantity of a product to a warehouse." /><IncreaseStockForm /></>; }
+import { messages as m } from "@/lib/i18n";
+export const metadata = { title: m.stocks.increase };
+export default function Page() {
+  return (
+    <>
+      <PageHeader
+        title={m.stocks.increase}
+        description={m.stocks.increaseDescription}
+        action={
+          <LinkButton secondary href="/stocks">
+            ← {m.stocks.title}
+          </LinkButton>
+        }
+      />
+      <IncreaseStockForm />
+    </>
+  );
+}

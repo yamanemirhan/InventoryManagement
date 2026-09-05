@@ -9,6 +9,8 @@ public sealed class StockReadRepository(AppDbContext dbContext) : IStockReadRepo
 {
     public async Task<IReadOnlyList<WarehouseStockItemDto>> GetWarehouseStockAsync(Guid warehouseId, CancellationToken cancellationToken = default)
     {
+        if (!await dbContext.Warehouses.AnyAsync(x => x.Id == warehouseId, cancellationToken))
+            throw new KeyNotFoundException("Warehouse not found.");
         return await (
             from stock in dbContext.Stocks.AsNoTracking()
             join product in dbContext.Products.AsNoTracking()

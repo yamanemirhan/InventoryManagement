@@ -35,6 +35,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 
         var (statusCode, title) = exception switch
         {
+            KeyNotFoundException => (StatusCodes.Status404NotFound, "Not found"),
             DomainException => (StatusCodes.Status400BadRequest, "Business rule violation"),
             ConcurrencyException => (StatusCodes.Status409Conflict, "Concurrency conflict"),
             InvalidOperationException => (StatusCodes.Status409Conflict, "Conflict"),
@@ -45,7 +46,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         {
             Status = statusCode,
             Title = title,
-            Detail = exception.Message
+            Detail = statusCode == 500 ? "An unexpected error occurred. Please try again." : exception.Message
         };
 
         httpContext.Response.StatusCode = statusCode;

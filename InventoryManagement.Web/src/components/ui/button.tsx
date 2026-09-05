@@ -1,10 +1,26 @@
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" };
-export function Button({ className, variant = "primary", ...props }: ButtonProps) {
-  return <button className={cn(
-    "inline-flex min-h-10 items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-55",
-    variant === "primary" && "bg-slate-950 text-white hover:bg-slate-800 focus-visible:outline-slate-900",
-    variant === "secondary" && "border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 focus-visible:outline-slate-600",
-    variant === "ghost" && "text-slate-700 hover:bg-slate-100 focus-visible:outline-slate-600", className)} {...props} />;
+export const buttonStyles =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50";
+export function Button({
+  className,
+  variant = "primary",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+}) {
+  return (
+    <button
+      className={cn(
+        buttonStyles,
+        variant === "primary" && "bg-brand text-on-brand hover:bg-brand-hover",
+        variant === "secondary" &&
+          "border border-line bg-surface text-ink hover:bg-subtle",
+        variant === "ghost" && "text-muted hover:bg-subtle",
+        variant === "danger" && "bg-danger text-on-brand",
+        className,
+      )}
+      {...props}
+    />
+  );
 }

@@ -21,12 +21,16 @@ public static class DependencyInjection
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IProductReadRepository, ProductReadRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IStockRepository, StockRepository>();
         services.AddScoped<IStockReadRepository, StockReadRepository>();
         services.AddScoped<IStockMovementRepository, StockMovementRepository>();
         services.AddScoped<IStockMovementReadRepository, StockMovementReadRepository>();
         services.AddScoped<IWarehouseReadRepository, WarehouseReadRepository>();
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
+        services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+        services.AddScoped<IPurchaseOrderReadRepository, PurchaseOrderReadRepository>();
 
         return services;
     }
