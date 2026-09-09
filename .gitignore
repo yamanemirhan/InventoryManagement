@@ -33,7 +33,19 @@ pnpm-debug.log*
 # Environment files and local secrets
 **/.env
 **/.env.*
+**/*.env
+**/*.env.*
 !**/.env.example
+!**/*.env.example
+**/appsettings.Local.json
+**/appsettings.*.Local.json
+
+# Local agent metadata and generated setup artifacts
+.local/
+.codex/
+.claude/
+**/AGENTS.md
+**/CLAUDE.md
 
 # Local certificates and keys
 *.pem

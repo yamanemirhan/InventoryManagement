@@ -6,8 +6,10 @@ import { useWarehouses } from "../hooks/use-warehouses";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { getErrorMessage } from "@/lib/utils";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 export function WarehousesList() {
+  const { m } = useI18n();
+
   const query = useWarehouses();
   const [search, setSearch] = useState("");
   if (query.isPending) return <LoadingState />;

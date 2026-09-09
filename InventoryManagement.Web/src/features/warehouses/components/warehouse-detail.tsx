@@ -4,11 +4,13 @@ import { ErrorState, LoadingState } from "@/components/ui/states";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
 import { Button } from "@/components/ui/button";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { getErrorMessage } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSelectedWarehouseId } from "@/store/slices/inventory-ui-slice";
 export function WarehouseDetail({ id }: { id: string }) {
+  const { m } = useI18n();
+
   const query = useWarehouse(id);
   const dispatch = useAppDispatch();
   const selected = useAppSelector((s) => s.inventoryUi.selectedWarehouseId);

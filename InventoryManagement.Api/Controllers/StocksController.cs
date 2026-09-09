@@ -1,4 +1,7 @@
-﻿
+using InventoryManagement.Application.Stocks.Queries.GetStockOverview;
+using InventoryManagement.Api.Common.Authentication;
+using Microsoft.AspNetCore.Authorization;
+
 using InventoryManagement.Application.Stocks.Commands.IncreaseStock;
 using InventoryManagement.Application.Stocks.Commands.TransferStock;
 using InventoryManagement.Application.Stocks.Queries.GetStockMovementHistory;
@@ -9,14 +12,20 @@ using Microsoft.AspNetCore.Mvc;
 namespace InventoryManagement.Api.Controllers;
 
 [ApiController]
+[Authorize(Policy = InventoryPolicies.Read)]
 [Route("api/stocks")]
 public class StocksController(ISender sender) : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> GetOverview(CancellationToken ct) =>
+        Ok(await sender.Send(new GetStockOverviewQuery(), ct));
+
     [HttpGet("warehouse/{warehouseId:guid}/history/page")]
     public async Task<IActionResult> GetHistoryPage(Guid warehouseId, CancellationToken ct, int page = 1, int pageSize = 20) =>
         Ok(await sender.Send(new GetStockMovementHistoryPageQuery(warehouseId, page, pageSize), ct));
 
     [HttpPost("increase")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
     public async Task<IActionResult> Increase(IncreaseStockCommand command, CancellationToken cancellationToken)
     {
         await sender.Send(command, cancellationToken);
@@ -24,6 +33,7 @@ public class StocksController(ISender sender) : ControllerBase
     }
 
     [HttpPost("transfer")]
+    [Authorize(Policy = InventoryPolicies.Transfer)]
     public async Task<IActionResult> Transfer(TransferStockCommand command, CancellationToken cancellationToken)
     {
         await sender.Send(command, cancellationToken);

@@ -1,11 +1,14 @@
 "use client";
+import { AdminOnly } from "@/features/auth/components/access";
 import { getErrorMessage } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { LinkButton } from "@/components/ui/link-button";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { useProduct } from "../hooks/use-products";
 export function ProductDetail({ id }: { id: string }) {
+  const { m } = useI18n();
+
   const query = useProduct(id);
   if (query.isPending) return <LoadingState />;
   if (query.isError)
@@ -30,7 +33,9 @@ export function ProductDetail({ id }: { id: string }) {
         ))}
       </dl>
       <div className="mt-8">
-        <LinkButton href="/stocks/increase">{m.stocks.increase}</LinkButton>
+        <AdminOnly>
+          <LinkButton href="/stocks/increase">{m.stocks.increase}</LinkButton>
+        </AdminOnly>
       </div>
     </Card>
   );

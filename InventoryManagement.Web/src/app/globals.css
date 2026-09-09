@@ -31,6 +31,45 @@
   --sidebar-muted: #a9afca;
   --sidebar-active: #363f61;
 }
+[data-mode="light"] {
+  color-scheme: light;
+}
+:root:not([data-mode="light"]) {
+  color-scheme: dark;
+  --canvas: #101719;
+  --surface: #182225;
+  --surface-subtle: #202d30;
+  --ink: #edf4f2;
+  --muted: #a5b7b2;
+  --border: #314145;
+  --brand: #69cbb0;
+  --brand-hover: #8bdfc5;
+  --brand-soft: #233f37;
+  --on-brand: #ffffff;
+  --sidebar: #0c1516;
+  --sidebar-muted: #a3b8b0;
+  --sidebar-active: #28433b;
+  --success: #81d6a3;
+  --success-soft: #203a2e;
+  --danger: #ff9ba5;
+  --danger-soft: #442b32;
+  --info: #9abffc;
+  --info-soft: #25364d;
+  --warning: #eec483;
+  --warning-soft: #3f3525;
+  --skeleton: #2c3b3e;
+}
+:root[data-theme="indigo"]:not([data-mode="light"]) {
+  --brand: #adb5ff;
+  --brand-hover: #c6ccff;
+  --brand-soft: #30364f;
+  --sidebar: #101522;
+  --sidebar-muted: #acb3cf;
+  --sidebar-active: #333c5c;
+}
+:root:not([data-mode="light"]) .bg-brand {
+  color: #101719;
+}
 @theme inline {
   --font-sans: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;

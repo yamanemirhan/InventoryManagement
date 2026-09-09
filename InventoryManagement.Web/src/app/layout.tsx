@@ -1,20 +1,46 @@
-import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { AppShell } from "@/components/layout/app-shell";
 import { Providers } from "./providers";
-import { messages as m, locale } from "@/lib/i18n";
+import { getI18n } from "@/lib/i18n/server";
 import "./globals.css";
-export const metadata: Metadata = {
-  title: { default: m.app.name, template: "%s | " + m.app.name },
-  description: m.home.description,
-};
-export default function RootLayout({
+export async function generateMetadata() {
+  const { m } = await getI18n();
+  return {
+    title: { default: m.app.name, template: "%s | " + m.app.name },
+    description: m.home.description,
+  };
+}
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const { locale } = await getI18n();
+  const store = await cookies();
+  const mode =
+    store.get("inventory-mode")?.value === "light" ? "light" : "dark";
+  const accent =
+    store.get("inventory-accent")?.value === "indigo" ? "indigo" : "forest";
+  const development = process.env.NODE_ENV === "development";
+  const url =
+    process.env.KEYCLOAK_URL ?? (development ? "http://localhost:8088" : "");
+  const realm =
+    process.env.KEYCLOAK_REALM ?? (development ? "inventory-development" : "");
+  const clientId = process.env.KEYCLOAK_CLIENT_ID ?? "inventory-web";
+  const authConfig =
+    url && realm
+      ? {
+          url,
+          realm,
+          clientId,
+          googleEnabled: process.env.GOOGLE_LOGIN_ENABLED === "true",
+        }
+      : null;
   return (
-    <html lang={locale}>
+    <html lang={locale} data-mode={mode} data-theme={accent}>
       <body>
-        <Providers>
-          <AppShell>{children}</AppShell>
+        <Providers locale={locale} authConfig={authConfig}>
+          <AppShell initialMode={mode} initialAccent={accent}>
+            {children}
+          </AppShell>
         </Providers>
       </body>
     </html>

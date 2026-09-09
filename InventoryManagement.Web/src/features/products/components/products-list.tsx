@@ -6,8 +6,10 @@ import { useProducts } from "../hooks/use-products";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { getErrorMessage } from "@/lib/utils";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 export function ProductsList() {
+  const { m } = useI18n();
+
   const query = useProducts();
   const [search, setSearch] = useState("");
   if (query.isPending) return <LoadingState />;

@@ -1,4 +1,6 @@
-﻿
+using InventoryManagement.Api.Common.Authentication;
+using Microsoft.AspNetCore.Authorization;
+
 using InventoryManagement.Application.Warehouses.Commands.CreateWarehouse;
 using InventoryManagement.Application.Warehouses.Queries.GetWarehouses;
 using MediatR;
@@ -7,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace InventoryManagement.Api.Controllers;
 
 [ApiController]
+[Authorize(Policy = InventoryPolicies.Read)]
 [Route("api/warehouses")]
 public class WarehousesController(ISender sender) : ControllerBase
 {
@@ -15,6 +18,7 @@ public class WarehousesController(ISender sender) : ControllerBase
         Ok(await sender.Send(new InventoryManagement.Application.Warehouses.Queries.GetWarehouseById.GetWarehouseByIdQuery(id), ct));
 
     [HttpPost]
+    [Authorize(Policy = InventoryPolicies.Manage)]
     public async Task<ActionResult<Guid>> Create(CreateWarehouseCommand command, CancellationToken cancellationToken)
     {
         var id = await sender.Send(command, cancellationToken);

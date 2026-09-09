@@ -1,5 +1,6 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { stockKeys } from "@/features/stocks/api/stocks-api";
 import {
   createProduct,
   getProduct,
@@ -25,6 +26,6 @@ export function useCreateProduct() {
   return useMutation({
     mutationFn: createProduct,
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: productKeys.all }),
+      Promise.all([queryClient.invalidateQueries({ queryKey: productKeys.all }), queryClient.invalidateQueries({queryKey: stockKeys.all})]),
   });
 }

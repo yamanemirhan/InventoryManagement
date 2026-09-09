@@ -1,5 +1,6 @@
+"use client";
 import { Button } from "./button";
-import { messages as m, formatNumber, formatCount } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 export function Pagination({
   page,
   pageSize,
@@ -11,6 +12,8 @@ export function Pagination({
   total: number;
   onChange: (page: number) => void;
 }) {
+  const { m, formatNumber, formatCount } = useI18n();
+
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line p-5 text-xs text-muted">

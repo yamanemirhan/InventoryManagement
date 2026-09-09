@@ -28,6 +28,15 @@
 # Secrets and local configuration
 **/.env
 **/.env.*
+**/*.env
+**/*.env.*
+**/appsettings.Local.json
+**/appsettings.*.Local.json
+.local/
+.codex/
+.claude/
+**/AGENTS.md
+**/CLAUDE.md
 *.pem
 *.key
 *.pfx

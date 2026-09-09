@@ -1,6 +1,7 @@
 using InventoryManagement.Api.Common.Exceptions;
 using InventoryManagement.Application;
 using InventoryManagement.Infrastructure;
+using InventoryManagement.Api.Common.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddControllers();
+builder.Services.AddInventoryAuthentication(builder.Configuration, builder.Environment);
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
@@ -45,11 +47,14 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 
 app.UseCors("Frontend");
+app.UseRequestLocalization(options => options.SetDefaultCulture("en")
+    .AddSupportedCultures("en", "tr").AddSupportedUICultures("en", "tr"));
 
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health");
-app.MapHealthChecks("/api/health");
+app.MapHealthChecks("/health").AllowAnonymous();
+app.MapHealthChecks("/api/health").AllowAnonymous();
 app.MapControllers();
 
 app.Run();

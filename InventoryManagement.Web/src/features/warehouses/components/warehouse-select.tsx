@@ -1,11 +1,12 @@
 "use client";
 import { forwardRef, type SelectHTMLAttributes } from "react";
 import { useWarehouses } from "../hooks/use-warehouses";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 export const WarehouseSelect = forwardRef<
   HTMLSelectElement,
-  SelectHTMLAttributes<HTMLSelectElement>
->(function WarehouseSelect(props, ref) {
+  SelectHTMLAttributes<HTMLSelectElement> & { emptyLabel?: string }
+>(function WarehouseSelect({ emptyLabel, ...props }, ref) {
+  const { m } = useI18n();
   const query = useWarehouses();
   return (
     <select
@@ -19,7 +20,7 @@ export const WarehouseSelect = forwardRef<
           ? m.common.loadingOptions
           : query.isError
             ? m.common.unavailable
-            : m.common.selectWarehouse}
+            : (emptyLabel ?? m.common.selectWarehouse)}
       </option>
       {query.data?.map((w) => (
         <option key={w.id} value={w.id}>

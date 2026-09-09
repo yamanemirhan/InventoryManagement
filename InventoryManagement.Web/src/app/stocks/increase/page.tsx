@@ -1,9 +1,14 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { LinkButton } from "@/components/ui/link-button";
 import { IncreaseStockForm } from "@/features/stocks/components/increase-stock-form";
-import { messages as m } from "@/lib/i18n";
-export const metadata = { title: m.stocks.increase };
-export default function Page() {
+import { getI18n } from "@/lib/i18n/server";
+export async function generateMetadata() {
+  const { m } = await getI18n();
+  return { title: m.stocks.increase };
+}
+export default async function Page() {
+  const { m } = await getI18n();
+
   return (
     <>
       <PageHeader

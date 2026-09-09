@@ -1,13 +1,17 @@
+using InventoryManagement.Api.Common.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using InventoryManagement.Application.Suppliers.Commands.CreateSupplier;
 using InventoryManagement.Application.Suppliers.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 namespace InventoryManagement.Api.Controllers;
 [ApiController]
+[Authorize(Policy = InventoryPolicies.Read)]
 [Route("api/suppliers")]
 public sealed class SuppliersController(ISender sender) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Policy = InventoryPolicies.Manage)]
     public async Task<ActionResult<Guid>> Create(CreateSupplierCommand command, CancellationToken ct)
     {
         var id = await sender.Send(command, ct);

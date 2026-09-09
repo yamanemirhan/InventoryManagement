@@ -1,5 +1,8 @@
 "use client";
 import Link from "next/link";
+import { Preferences } from "./preferences";
+import { useAuth } from "@/features/auth/components/auth-provider";
+import { AuthGate } from "@/features/auth/components/auth-gate";
 import { usePathname } from "next/navigation";
 import {
   Boxes,
@@ -12,41 +15,36 @@ import {
   X,
   ChevronRight,
   PanelTop,
-  Palette,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSidebarOpen } from "@/store/slices/inventory-ui-slice";
-const nav = [
-  { href: "/", label: m.app.overview, icon: PanelTop },
-  { href: "/products", label: m.nav.products, icon: Package },
-  { href: "/warehouses", label: m.nav.warehouses, icon: Warehouse },
-  { href: "/stocks", label: m.nav.stocks, icon: Boxes },
-  { href: "/suppliers", label: m.nav.suppliers, icon: UsersRound },
-  { href: "/purchase-orders", label: m.nav.orders, icon: ClipboardList },
-];
-export function AppShell({ children }: { children: ReactNode }) {
+
+export function AppShell({
+  children,
+  initialMode,
+  initialAccent,
+}: {
+  children: ReactNode;
+  initialMode: "dark" | "light";
+  initialAccent: "forest" | "indigo";
+}) {
+  const auth = useAuth();
+  const { m } = useI18n();
+  const nav = [
+    { href: "/", label: m.app.overview, icon: PanelTop },
+    { href: "/products", label: m.nav.products, icon: Package },
+    { href: "/warehouses", label: m.nav.warehouses, icon: Warehouse },
+    { href: "/stocks", label: m.nav.stocks, icon: Boxes },
+    { href: "/suppliers", label: m.nav.suppliers, icon: UsersRound },
+    { href: "/purchase-orders", label: m.nav.orders, icon: ClipboardList },
+  ];
+
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const open = useAppSelector((s) => s.inventoryUi.sidebarOpen);
-  const [theme, setTheme] = useState("forest");
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("inventory-theme");
-      if (saved === "indigo") document.documentElement.dataset.theme = saved;
-    } catch {}
-  }, []);
-  const changeTheme = () => {
-    const next =
-      document.documentElement.dataset.theme === "indigo" ? "forest" : "indigo";
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("inventory-theme", next);
-    } catch {}
-  };
   const current =
     nav.find((n) => n.href !== "/" && pathname.startsWith(n.href)) ?? nav[0];
   return (
@@ -97,15 +95,36 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="mt-auto px-4 pb-7">
           <div className="mb-6 border-t border-sidebar-muted/15" />
-          <p className="text-xs text-sidebar-muted">{m.app.footer}</p>
+          <p className="text-xs text-sidebar-muted">
+            {auth.status === "authenticated" ? auth.name : m.app.footer}
+          </p>
+          {auth.status === "authenticated" && (
+            <div className="mt-4 space-y-2 text-xs">
+              <p className="text-sidebar-muted">
+                {auth.admin ? m.auth.admin : m.auth.user}
+              </p>
+              <button
+                className="block text-on-brand"
+                onClick={() => auth.account()}
+              >
+                {m.auth.account}
+              </button>
+              <button
+                className="block text-on-brand"
+                onClick={() => auth.logout()}
+              >
+                {m.auth.logout}
+              </button>
+            </div>
+          )}
           <p className="mt-2 flex items-center gap-2 text-[10px] text-sidebar-muted/60">
             INVENTORY OS <ArrowUpRight className="size-3" />
           </p>
         </div>
       </aside>
       <div className="lg:pl-[244px]">
-        <header className="flex h-[76px] items-center justify-between border-b border-line bg-surface px-5 sm:px-9">
-          <div className="flex items-center gap-3 text-xs">
+        <header className="flex h-[76px] items-center justify-between gap-3 border-b border-line bg-surface px-5 sm:px-9">
+          <div className="flex min-w-0 items-center gap-3 text-xs">
             <button
               aria-label={m.app.menu}
               aria-expanded={open}
@@ -119,18 +138,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               {m.app.workspace}
             </span>
             <ChevronRight className="hidden size-3 text-muted sm:inline" />
-            <span className="font-medium">{current.label}</span>
+            <span className="truncate font-medium">{current.label}</span>
           </div>
-          <button
-            type="button"
-            onClick={changeTheme}
-            aria-label={m.app.theme}
-            title={m.app.theme}
-            data-current-theme={theme}
-            className="flex size-9 items-center justify-center rounded-full border border-line text-muted hover:text-brand"
-          >
-            <Palette className="size-4" />
-          </button>
+          <Preferences
+            initialMode={initialMode}
+            initialAccent={initialAccent}
+          />
         </header>
         {open && (
           <nav
@@ -138,6 +151,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             aria-label={m.app.navigation}
             className="grid grid-cols-2 gap-2 border-b border-line bg-surface p-4 lg:hidden"
           >
+            {auth.status === "authenticated" && (
+              <div className="col-span-2 flex gap-4 p-3 text-sm">
+                <button onClick={() => auth.account()}>{m.auth.account}</button>
+                <button onClick={() => auth.logout()}>{m.auth.logout}</button>
+              </div>
+            )}
             {nav.map((n) => (
               <Link
                 key={n.href}
@@ -160,7 +179,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           id="main-content"
           className="mx-auto max-w-[1440px] space-y-7 px-5 py-8 sm:px-9 sm:py-10"
         >
-          {children}
+          <AuthGate>{children}</AuthGate>
         </main>
       </div>
     </div>

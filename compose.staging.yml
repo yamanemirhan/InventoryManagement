@@ -8,6 +8,8 @@ services:
       dockerfile: InventoryManagement.Api/Dockerfile
     restart: unless-stopped
     environment:
+      Authentication__Authority: ${KEYCLOAK_AUTHORITY:?Set KEYCLOAK_AUTHORITY}
+      Authentication__Audience: inventory-api
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
     healthcheck:
@@ -45,6 +47,11 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: ""
     restart: unless-stopped
+    environment:
+      KEYCLOAK_URL: ${KEYCLOAK_URL:?Set KEYCLOAK_URL}
+      KEYCLOAK_REALM: inventory-staging
+      KEYCLOAK_CLIENT_ID: inventory-web
+      GOOGLE_LOGIN_ENABLED: ${GOOGLE_LOGIN_ENABLED:-false}
     depends_on:
       api:
         condition: service_healthy

@@ -1,6 +1,8 @@
 import { LinkButton } from "@/components/ui/link-button";
-import { messages as m } from "@/lib/i18n";
-export default function NotFound() {
+import { getI18n } from "@/lib/i18n/server";
+export default async function NotFound() {
+  const { m } = await getI18n();
+
   return (
     <div className="panel space-y-5 p-10 text-center">
       <p className="text-5xl font-semibold text-brand">404</p>

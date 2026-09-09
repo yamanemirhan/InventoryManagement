@@ -8,7 +8,9 @@ export function createQueryClient() {
         staleTime: 30_000,
         refetchOnWindowFocus: false,
         retry: (count, error) =>
-          !(error instanceof ApiError && error.status === 404) && count < 2,
+          !(
+            error instanceof ApiError && [401, 403, 404].includes(error.status)
+          ) && count < 2,
       },
       mutations: { retry: false },
     },

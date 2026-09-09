@@ -17,12 +17,12 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         {
             // group validation errors by property name and return them in the response
             var errors = validationException.Errors.GroupBy(x => x.PropertyName)
-                .ToDictionary(g => g.Key, g => g.Select(x => x.ErrorMessage).ToArray());
+                .ToDictionary(g => g.Key, g => g.Select(x => ErrorMessages.Localize(x.ErrorMessage)).ToArray());
 
             var validationProblem = new ValidationProblemDetails(errors)
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = "Validation Error",
+                Title = ErrorMessages.Localize("Validation Error"),
             };
 
             httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -45,8 +45,9 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         var problemDetails = new ProblemDetails
         {
             Status = statusCode,
-            Title = title,
-            Detail = statusCode == 500 ? "An unexpected error occurred. Please try again." : exception.Message
+            Title = ErrorMessages.Localize(title),
+            Detail = ErrorMessages.Localize(statusCode == 500 ? "An unexpected error occurred. Please try again." : exception.Message),
+            Extensions = { ["code"] = exception is ConcurrencyException ? "concurrency_conflict" : "request_failed" }
         };
 
         httpContext.Response.StatusCode = statusCode;

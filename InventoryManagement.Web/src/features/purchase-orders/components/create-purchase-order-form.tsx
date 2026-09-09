@@ -16,18 +16,20 @@ import { LinkButton } from "@/components/ui/link-button";
 import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
-import { messages as m, formatAmount, formatCount } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { getErrorMessage } from "@/lib/utils";
 import { applyApiFieldErrors } from "@/lib/forms/apply-api-errors";
 import { useAppSelector } from "@/store/hooks";
 export function CreatePurchaseOrderForm() {
+  const { m, formatAmount, formatCount } = useI18n();
+
   const router = useRouter();
   const suppliers = useSuppliers();
   const mutation = useCreatePurchaseOrder();
   const selected =
     useAppSelector((s) => s.inventoryUi.selectedWarehouseId) ?? "";
   const form = useForm<CreatePurchaseOrderFormValues>({
-    resolver: zodResolver(createPurchaseOrderSchema),
+    resolver: zodResolver(createPurchaseOrderSchema(m)),
     defaultValues: {
       supplierId: "",
       warehouseId: selected,

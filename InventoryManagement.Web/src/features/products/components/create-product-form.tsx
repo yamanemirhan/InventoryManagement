@@ -9,17 +9,19 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { applyApiFieldErrors } from "@/lib/forms/apply-api-errors";
 import { getErrorMessage } from "@/lib/utils";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { useCreateProduct } from "../hooks/use-products";
 import {
   createProductSchema,
   type CreateProductFormValues,
 } from "../schemas/product-schema";
 export function CreateProductForm() {
+  const { m } = useI18n();
+
   const router = useRouter();
   const mutation = useCreateProduct();
   const form = useForm<CreateProductFormValues>({
-    resolver: zodResolver(createProductSchema),
+    resolver: zodResolver(createProductSchema(m)),
     defaultValues: { name: "", sku: "" },
   });
   const submit = form.handleSubmit(async (values) => {

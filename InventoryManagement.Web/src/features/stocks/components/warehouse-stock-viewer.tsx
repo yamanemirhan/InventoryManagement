@@ -1,18 +1,31 @@
 "use client";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useWarehouseStock } from "../hooks/use-stocks";
+import { useWarehouseStock, useStockOverview } from "../hooks/use-stocks";
 import { WarehouseSelect } from "@/features/warehouses/components/warehouse-select";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSelectedWarehouseId } from "@/store/slices/inventory-ui-slice";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import { messages as m, formatNumber } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { getErrorMessage } from "@/lib/utils";
 export function WarehouseStockViewer({ id }: { id?: string }) {
+  const { m, formatNumber, locale } = useI18n();
+
   const selected =
     useAppSelector((s) => s.inventoryUi.selectedWarehouseId) ?? "";
   const dispatch = useAppDispatch();
   const warehouseId = id ?? selected;
-  const query = useWarehouseStock(warehouseId);
+  const [search, setSearch] = useState("");
+  const warehouseQuery = useWarehouseStock(warehouseId);
+  const overviewQuery = useStockOverview(!warehouseId);
+  const query = warehouseId ? warehouseQuery : overviewQuery;
+  const items =
+    query.data?.filter((item) =>
+      `${item.productName} ${item.sku}`
+        .toLocaleLowerCase(locale)
+        .includes(search.toLocaleLowerCase(locale)),
+    ) ?? [];
   return (
     <div className="space-y-5">
       {!id && (
@@ -25,6 +38,7 @@ export function WarehouseStockViewer({ id }: { id?: string }) {
               {m.common.warehouse}
             </label>
             <WarehouseSelect
+              emptyLabel={m.stockOverview.all}
               id="stock-warehouse"
               value={selected}
               onChange={(e) =>
@@ -42,22 +56,62 @@ export function WarehouseStockViewer({ id }: { id?: string }) {
           )}
         </div>
       )}
-      {!warehouseId ? (
-        <EmptyState
-          title={m.stocks.choose}
-          description={m.stocks.chooseDescription}
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          className="field max-w-sm"
+          aria-label={m.stockOverview.search}
+          placeholder={m.stockOverview.search}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
-      ) : query.isPending ? (
+        <Button
+          variant="secondary"
+          disabled={query.isFetching}
+          onClick={() => query.refetch()}
+        >
+          {m.stockOverview.refresh}
+        </Button>
+        <span role="status" className="text-xs text-muted">
+          {m.stockOverview.live}
+        </span>
+      </div>
+      {query.data && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            [
+              m.stockOverview.total,
+              query.data.reduce((total, item) => total + item.quantity, 0),
+            ],
+            [
+              m.stockOverview.products,
+              query.data.filter((item) => item.quantity > 0).length,
+            ],
+            [
+              m.stockOverview.zero,
+              query.data.filter((item) => item.quantity === 0).length,
+            ],
+          ].map(([label, value]) => (
+            <div key={label} className="panel p-5">
+              <p className="text-xs text-muted">{label}</p>
+              <p className="mt-3 text-3xl font-semibold tabular-nums">
+                {formatNumber(Number(value))}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      {query.isPending ? (
         <LoadingState />
       ) : query.isError ? (
         <ErrorState
           message={getErrorMessage(query.error)}
           onRetry={() => query.refetch()}
         />
-      ) : !query.data.length ? (
+      ) : !items.length ? (
         <EmptyState
-          title={m.stocks.empty}
-          description={m.stocks.emptyDescription}
+          title={search ? m.common.emptySearch : m.stocks.empty}
+          description={search ? m.common.searchHint : m.stocks.emptyDescription}
         />
       ) : (
         <div className="panel overflow-x-auto">
@@ -70,7 +124,7 @@ export function WarehouseStockViewer({ id }: { id?: string }) {
               </tr>
             </thead>
             <tbody>
-              {query.data.map((item) => (
+              {items.map((item) => (
                 <tr key={item.productId}>
                   <td>
                     <Link

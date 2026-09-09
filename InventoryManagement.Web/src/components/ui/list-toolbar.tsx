@@ -1,5 +1,6 @@
+"use client";
 import { Search } from "lucide-react";
-import { messages as m, formatCount } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 export function ListToolbar({
   value,
   onChange,
@@ -9,6 +10,8 @@ export function ListToolbar({
   onChange: (value: string) => void;
   count: number;
 }) {
+  const { m, formatCount } = useI18n();
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-5">
       <div className="relative w-full sm:w-80">

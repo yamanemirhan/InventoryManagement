@@ -1,4 +1,5 @@
 "use client";
+import { AdminOnly } from "@/features/auth/components/access";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { Check, ChevronRight } from "lucide-react";
@@ -9,15 +10,12 @@ import { ErrorState, LoadingState } from "@/components/ui/states";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  messages as m,
-  formatAmount,
-  formatNumber,
-  formatDate,
-} from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { getErrorMessage } from "@/lib/utils";
 import { ApiError } from "@/lib/api/api-error";
 export function PurchaseOrderDetail({ id }: { id: string }) {
+  const { m, formatAmount, formatNumber, formatDate } = useI18n();
+
   const query = usePurchaseOrder(id);
   const mutation = useOrderAction();
   const [action, setAction] = useState<OrderAction | null>(null);
@@ -172,32 +170,34 @@ export function PurchaseOrderDetail({ id }: { id: string }) {
         </div>
       </section>
       <p className="text-xs leading-6 text-muted">{m.orders.priceNote}</p>
-      <section className="panel p-6">
-        <p className="mb-5 text-sm text-muted">{m.orders.receiptNote}</p>
-        <div className="flex flex-wrap gap-3">
-          {(["order", "receive", "cancel"] as const).map((value) => (
-            <Button
-              key={value}
-              variant={value === "cancel" ? "secondary" : "primary"}
-              disabled={
-                mutation.isPending ||
-                (value === "order"
-                  ? order.status !== 1
-                  : value === "receive"
-                    ? order.status !== 2
-                    : order.status !== 1 && order.status !== 2)
-              }
-              onClick={(event) => {
-                actionButton.current = event.currentTarget;
-                mutation.reset();
-                setAction(value);
-              }}
-            >
-              {m.orders[value]}
-            </Button>
-          ))}
-        </div>
-      </section>
+      <AdminOnly>
+        <section className="panel p-6">
+          <p className="mb-5 text-sm text-muted">{m.orders.receiptNote}</p>
+          <div className="flex flex-wrap gap-3">
+            {(["order", "receive", "cancel"] as const).map((value) => (
+              <Button
+                key={value}
+                variant={value === "cancel" ? "secondary" : "primary"}
+                disabled={
+                  mutation.isPending ||
+                  (value === "order"
+                    ? order.status !== 1
+                    : value === "receive"
+                      ? order.status !== 2
+                      : order.status !== 1 && order.status !== 2)
+                }
+                onClick={(event) => {
+                  actionButton.current = event.currentTarget;
+                  mutation.reset();
+                  setAction(value);
+                }}
+              >
+                {m.orders[value]}
+              </Button>
+            ))}
+          </div>
+        </section>
+      </AdminOnly>
       {action && (
         <ConfirmDialog
           description={descriptions[action]}
