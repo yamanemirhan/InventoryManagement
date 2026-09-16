@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Application.Stocks.Commands.TransferStock;
 using InventoryManagement.Application.Common.Exceptions;
 using InventoryManagement.Domain.Entities;
@@ -21,7 +21,7 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
 
         Guid stockId;
 
-        await using (var seedContext = new AppDbContext(options))
+        await using (var seedContext = new AppDbContext(options, fixture))
         {
             var product = new Product("Keyboard", $"KB-{Guid.NewGuid()}");
             var warehouse = new Warehouse("Main", "Istanbul");
@@ -38,8 +38,8 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
             stockId = stock.Id;
         }
 
-        await using var contextA = new AppDbContext(options);
-        await using var contextB = new AppDbContext(options);
+        await using var contextA = new AppDbContext(options, fixture);
+        await using var contextB = new AppDbContext(options, fixture);
 
         var stockA = await contextA.Stocks.SingleAsync(x => x.Id == stockId);
         var stockB = await contextB.Stocks.SingleAsync(x => x.Id == stockId);
@@ -66,7 +66,7 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
         Guid sourceId;
         Guid targetId;
 
-        await using (var seed = new AppDbContext(options))
+        await using (var seed = new AppDbContext(options, fixture))
         {
             var product = new Product("Mouse", $"M-{Guid.NewGuid()}");
             var source = new Warehouse("Source", "Istanbul");
@@ -88,8 +88,8 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
             targetId = target.Id;
         }
 
-        await using var contextA = new AppDbContext(options);
-        await using var contextB = new AppDbContext(options);
+        await using var contextA = new AppDbContext(options, fixture);
+        await using var contextB = new AppDbContext(options, fixture);
 
         await contextB.Stocks.SingleAsync(x => x.ProductId == productId && x.WarehouseId == sourceId);
         await contextB.Stocks.SingleAsync(x => x.ProductId == productId && x.WarehouseId == targetId);
@@ -109,7 +109,7 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
             new TransferStockCommand(productId, sourceId, targetId, 1),
             CancellationToken.None);
 
-        await using var verify = new AppDbContext(options);
+        await using var verify = new AppDbContext(options, fixture);
 
         var sourceStockFromDb = await verify.Stocks.SingleAsync(
             x => x.ProductId == productId && x.WarehouseId == sourceId);
@@ -132,7 +132,7 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
         Guid sourceId;
         Guid targetId;
 
-        await using (var seed = new AppDbContext(options))
+        await using (var seed = new AppDbContext(options, fixture))
         {
             var product = new Product("Monitor", $"MON-{Guid.NewGuid()}");
             var source = new Warehouse("Source", "Istanbul");
@@ -155,8 +155,8 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
             targetId = target.Id;
         }
 
-        await using var contextA = new AppDbContext(options);
-        await using var contextB = new AppDbContext(options);
+        await using var contextA = new AppDbContext(options, fixture);
+        await using var contextB = new AppDbContext(options, fixture);
 
         await contextB.Stocks.SingleAsync(x => x.ProductId == productId && x.WarehouseId == sourceId);
         await contextB.Stocks.SingleAsync(x => x.ProductId == productId && x.WarehouseId == targetId);
@@ -177,7 +177,7 @@ public class StockConcurrencyTests(PostgresFixture fixture) : IClassFixture<Post
                 new TransferStockCommand(productId, sourceId, targetId, 6),
                 CancellationToken.None));
 
-        await using var verify = new AppDbContext(options);
+        await using var verify = new AppDbContext(options, fixture);
 
         var sourceStockFromDb = await verify.Stocks.SingleAsync(
             x => x.ProductId == productId && x.WarehouseId == sourceId);

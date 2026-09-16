@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Entities;
 using InventoryManagement.Infrastructure.Persistence;
 using InventoryManagement.Infrastructure.Persistence.Repositories;
@@ -16,7 +16,7 @@ public class StockReadRepositoryTests(PostgresFixture fixture) : IClassFixture<P
             .UseNpgsql(fixture.ConnectionString)
             .Options;
 
-        await using var dbContext = new AppDbContext(options);
+        await using var dbContext = new AppDbContext(options, fixture);
 
         var product = new Product("Keyboard", $"KB-{Guid.NewGuid()}");
         var warehouse = new Warehouse("Main", "Istanbul");

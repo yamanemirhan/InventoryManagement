@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Entities;
 using InventoryManagement.Domain.Enums;
 using InventoryManagement.Infrastructure.Persistence;
@@ -17,7 +17,7 @@ public class StockRepositoryTests(PostgresFixture fixture) : IClassFixture<Postg
             .UseNpgsql(fixture.ConnectionString)
             .Options;
 
-        await using var dbContext = new AppDbContext(options);
+        await using var dbContext = new AppDbContext(options, fixture);
 
         var product = new Product("Keyboard", $"KB-{Guid.NewGuid()}");
         var warehouse = new Warehouse("Main Warehouse", "Istanbul");

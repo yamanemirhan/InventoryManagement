@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Entities;
 using InventoryManagement.Infrastructure.Persistence;
 using InventoryManagement.Infrastructure.Persistence.Repositories;
@@ -18,7 +18,7 @@ public class ProductRepositoryTests(PostgresFixture fixture) : IClassFixture<Pos
             .UseNpgsql(_fixture.ConnectionString)
             .Options;
 
-        await using var dbContext = new AppDbContext(options);
+        await using var dbContext = new AppDbContext(options, _fixture);
 
         var repository = new ProductRepository(dbContext);
 
@@ -39,7 +39,7 @@ public class ProductRepositoryTests(PostgresFixture fixture) : IClassFixture<Pos
             .UseNpgsql(_fixture.ConnectionString)
             .Options;
 
-        await using var dbContext = new AppDbContext(options);
+        await using var dbContext = new AppDbContext(options, _fixture);
 
         var repository = new ProductRepository(dbContext);
 
