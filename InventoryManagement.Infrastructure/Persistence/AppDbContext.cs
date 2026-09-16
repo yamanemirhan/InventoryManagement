@@ -9,9 +9,11 @@ using InventoryManagement.Domain.Common;
 
 namespace InventoryManagement.Infrastructure.Persistence;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContext? companyContext = null) : DbContext(options), IUnitOfWork
+public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContext? companyContext = null, ICurrentUser? currentUser = null) : DbContext(options), IUnitOfWork
 {
     public Guid CurrentCompanyId => companyContext?.CompanyId ?? Guid.Empty;
+    public DbSet<KnowledgeDocument> KnowledgeDocuments => Set<KnowledgeDocument>();
+    public DbSet<ActivityEntry> ActivityEntries => Set<ActivityEntry>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<CompanyMember> CompanyMembers => Set<CompanyMember>();
     public DbSet<ApplicationUser> ApplicationUsers => Set<ApplicationUser>();
@@ -38,6 +40,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
         modelBuilder.Entity<CompanyMember>().HasIndex(x => new { x.CompanyId, x.SubjectId }).IsUnique();
         modelBuilder.Entity<CompanyMember>().HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CompanyMember>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        ConfigureCompany<KnowledgeDocument>(modelBuilder);
+        modelBuilder.Entity<ActivityEntry>().HasQueryFilter(x => x.CompanyId == CurrentCompanyId);
         ConfigureCompany<Product>(modelBuilder);
         ConfigureCompany<Warehouse>(modelBuilder);
         ConfigureCompany<Supplier>(modelBuilder);
@@ -62,6 +66,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
             if (entry.State == EntityState.Added) entry.Property(x => x.CompanyId).CurrentValue = CurrentCompanyId;
             else if (entry.Entity.CompanyId != CurrentCompanyId || entry.Property(x => x.CompanyId).IsModified)
                 throw new InvalidOperationException("Company ownership cannot be changed.");
+        }
+        // Audit metadata is committed atomically with the business change. No field
+        // values, document bodies, passwords or tokens are copied into the log.
+        foreach (var pending in ChangeTracker.Entries<ActivityEntry>().Where(x => x.State == EntityState.Added).ToList())
+            pending.State = EntityState.Detached;
+        var changes = ChangeTracker.Entries().Where(x => x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted).ToList();
+        foreach (var entry in changes)
+        {
+            var companyId = entry.Entity switch
+            {
+                CompanyEntity entity => entity.CompanyId,
+                Company entity => entity.Id,
+                CompanyMember member => member.CompanyId,
+                _ => Guid.Empty
+            };
+            if (companyId == Guid.Empty || entry.Entity is not Entity entityWithId) continue;
+            ActivityEntries.Add(new ActivityEntry
+            {
+                CompanyId = companyId, EntityType = entry.Metadata.ClrType.Name,
+                EntityId = entityWithId.Id, Action = entry.State.ToString(),
+                ActorSubjectId = currentUser?.SubjectId
+            });
         }
         try
         {

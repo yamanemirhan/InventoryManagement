@@ -50,6 +50,18 @@ Company endpoints follow `Controller → MediatR command/query → handler → r
 
 The company migration groups existing inventory under a legacy company. Platform Admin assigns its first owner; new accounts do not receive automatic access. Deploy the API and frontend together after migration. Reverting this migration requires restoring the matching database backup and application version; automatic downgrade is disabled.
 
+## Workspace and knowledge resources
+
+The home dashboard shows company inventory totals, open purchase orders, out-of-stock products and setup links. Owners and Managers can edit product, warehouse and supplier details from their detail pages.
+
+`/activity` lists company changes for Owners and Managers. Audit metadata is saved in the same transaction as each change: entity type, record ID, action, actor ID and UTC timestamp. Logging starts with this release; historical changes and previous field values are not reconstructed.
+
+`/knowledge` stores plain-text operating guides and reference material within each company. Owners and Managers create and edit Draft, Published and Archived resources. Other members can read only Published resources. Each update increments a revision; concurrent edits are rejected so stale content cannot overwrite a newer version. A revision number does not retain historical document bodies.
+
+This is data preparation for future RAG, not an AI integration. Future indexing should use `(companyId, documentId)` as the source identity, revision and update time for freshness, and `/knowledge/{id}` for citations. Only Published content may enter retrieval. Status changes must remove archived/draft content from the index, and retrieval must recheck company membership and current publication status. Inventory facts should come from current relational data. No chatbot, embedding provider, vector index or indexing pipeline is included.
+
+Apply the `WorkspaceResourcesAndActivity` migration before starting this release. It adds knowledge and activity tables without rewriting existing inventory.
+
 ## Validation
 
 ```sh

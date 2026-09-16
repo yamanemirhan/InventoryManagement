@@ -21,4 +21,9 @@ public class Product : CompanyEntity
     {
         IsDeleted = true;
     }
+    public void Update(string name, string sku)
+    {
+        Name = name.Trim();
+        SKU = sku.Trim();
+    }
 }

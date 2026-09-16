@@ -1,4 +1,5 @@
 "use client";
+import { CatalogEditor } from "@/features/workspace/catalog-editor";
 import { AdminOnly } from "@/features/auth/components/access";
 import { useSupplier } from "../hooks/use-suppliers";
 import { ErrorState, LoadingState } from "@/components/ui/states";
@@ -28,6 +29,16 @@ export function SupplierDetail({ id }: { id: string }) {
       <div className="mt-8">
         <AdminOnly>
           <LinkButton href="/purchase-orders/new">{m.orders.new}</LinkButton>
+        </AdminOnly>
+      </div>
+      <div className="mt-5">
+        <AdminOnly>
+          <CatalogEditor
+            kind="suppliers"
+            id={id}
+            name={query.data.name}
+            value={query.data.email}
+          />
         </AdminOnly>
       </div>
     </Card>

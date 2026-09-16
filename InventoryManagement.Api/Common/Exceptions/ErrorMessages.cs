@@ -4,6 +4,9 @@ internal static class ErrorMessages
 {
  private static readonly IReadOnlyDictionary<string,string> Turkish = new Dictionary<string,string>
  {
+  ["Document not found."] = "Bilgi kaynağı bulunamadı.",
+  ["Invalid document status."] = "Geçersiz bilgi kaynağı durumu.",
+  ["This document has changed. Reload before saving."] = "Bu kaynak başka bir işlemde değiştirildi. Düzenlemeden çıkıp güncel içeriği yükleyin.",
   ["Company not found."] = "Şirket bulunamadı.",
   ["Company member not found."] = "Şirket üyesi bulunamadı.",
   ["Access denied"] = "Erişim reddedildi",

@@ -1,4 +1,6 @@
 "use client";
+import { AdminOnly } from "@/features/auth/components/access";
+import { CatalogEditor } from "@/features/workspace/catalog-editor";
 import { useWarehouse } from "../hooks/use-warehouses";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { Card } from "@/components/ui/card";
@@ -43,6 +45,16 @@ export function WarehouseDetail({ id }: { id: string }) {
         >
           {selected === id ? m.warehouses.selected : m.warehouses.select}
         </Button>
+      </div>
+      <div className="mt-5">
+        <AdminOnly>
+          <CatalogEditor
+            kind="warehouses"
+            id={id}
+            name={query.data.name}
+            value={query.data.location}
+          />
+        </AdminOnly>
       </div>
     </Card>
   );

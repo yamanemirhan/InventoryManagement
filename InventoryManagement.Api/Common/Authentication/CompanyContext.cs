@@ -8,6 +8,7 @@ namespace InventoryManagement.Api.Common.Authentication;
 public sealed class CompanyContext : ICompanyContext
 {
     public Guid CompanyId { get; set; }
+    public string Role { get; set; } = "";
 }
 
 public sealed class CompanyContextMiddleware(RequestDelegate next)
@@ -35,6 +36,7 @@ public sealed class CompanyContextMiddleware(RequestDelegate next)
             var identity = (ClaimsIdentity)http.User.Identity!;
             foreach (var claim in identity.FindAll("company_role").ToList()) identity.RemoveClaim(claim);
             company.CompanyId = id;
+            company.Role = http.User.IsInRole("Admin") ? "Owner" : role!;
             ((ClaimsIdentity)http.User.Identity!).AddClaim(new Claim("company_role", http.User.IsInRole("Admin") ? "Owner" : role!));
         }
         await next(http);

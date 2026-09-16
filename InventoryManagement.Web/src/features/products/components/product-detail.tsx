@@ -1,4 +1,5 @@
 "use client";
+import { CatalogEditor } from "@/features/workspace/catalog-editor";
 import { AdminOnly } from "@/features/auth/components/access";
 import { getErrorMessage } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -35,6 +36,16 @@ export function ProductDetail({ id }: { id: string }) {
       <div className="mt-8">
         <AdminOnly>
           <LinkButton href="/stocks/increase">{m.stocks.increase}</LinkButton>
+        </AdminOnly>
+      </div>
+      <div className="mt-5">
+        <AdminOnly>
+          <CatalogEditor
+            kind="products"
+            id={id}
+            name={query.data.name}
+            value={query.data.sku}
+          />
         </AdminOnly>
       </div>
     </Card>

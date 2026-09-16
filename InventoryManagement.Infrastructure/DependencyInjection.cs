@@ -20,6 +20,9 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<ICatalogRepository, CatalogRepository>();
+        services.AddScoped<IKnowledgeRepository, KnowledgeRepository>();
+        services.AddScoped<IWorkspaceReadRepository, WorkspaceReadRepository>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<ICompanyReadRepository, CompanyReadRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();

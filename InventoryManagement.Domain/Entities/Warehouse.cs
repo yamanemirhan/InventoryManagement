@@ -15,4 +15,9 @@ public class Warehouse : CompanyEntity
 
     public string Name { get; private set; } = null!;
     public string Location { get; private set; } = null!;
+    public void Update(string name, string location)
+    {
+        Name = name.Trim();
+        Location = location.Trim();
+    }
 }

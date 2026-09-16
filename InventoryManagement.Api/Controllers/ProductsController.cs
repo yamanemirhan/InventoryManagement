@@ -41,4 +41,12 @@ public class ProductsController(ISender sender) : Controller
 
         return Ok(products);
     }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    public async Task<IActionResult> Update(Guid id, InventoryManagement.Application.Products.Commands.UpdateProduct.UpdateProductCommand command, CancellationToken ct)
+    {
+        await sender.Send(command with { Id = id }, ct);
+        return NoContent();
+    }
 }

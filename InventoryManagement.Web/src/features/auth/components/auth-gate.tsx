@@ -47,7 +47,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
   );
   const adminPage =
     /\/(products|warehouses|suppliers|purchase-orders)\/new$/.test(path) ||
-    path === "/stocks/increase";
+    path === "/stocks/increase" ||
+    path === "/knowledge/new" ||
+    path === "/activity";
   if (
     !canRead ||
     (adminPage && !canManage) ||

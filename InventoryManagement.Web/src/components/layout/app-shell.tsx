@@ -20,6 +20,8 @@ import {
   X,
   ChevronRight,
   PanelTop,
+  BookOpen,
+  History,
 } from "lucide-react";
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -50,6 +52,17 @@ export function AppShell({
   ];
 
   nav.push({
+    href: "/knowledge",
+    label: t("Bilgi kaynakları", "Knowledge resources"),
+    icon: BookOpen,
+  });
+  if (company && ["Owner", "Manager"].includes(company.role))
+    nav.push({
+      href: "/activity",
+      label: t("İşlem geçmişi", "Activity history"),
+      icon: History,
+    });
+  nav.push({
     href: "/companies",
     label: t("Şirket ve ekip", "Company & team"),
     icon: UsersRound,
@@ -69,19 +82,33 @@ export function AppShell({
     return (
       <div className="flex min-h-screen flex-col bg-subtle">
         <header className="flex items-center justify-between gap-4 border-b border-line bg-surface px-5 py-5 sm:px-10">
-          <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight">
+          <Link
+            href="/"
+            className="flex items-center gap-3 font-semibold tracking-tight"
+          >
             <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand">
               <Boxes className="size-6" strokeWidth={1.5} />
             </span>
             {m.app.name}
           </Link>
-          <Preferences initialMode={initialMode} initialAccent={initialAccent} />
+          <Preferences
+            initialMode={initialMode}
+            initialAccent={initialAccent}
+          />
         </header>
-        <main id="main-content" className="flex flex-1 items-center justify-center px-5 py-10">
-          <div className="w-full max-w-md"><AuthGate>{children}</AuthGate></div>
+        <main
+          id="main-content"
+          className="flex flex-1 items-center justify-center px-5 py-10"
+        >
+          <div className="w-full max-w-md">
+            <AuthGate>{children}</AuthGate>
+          </div>
         </main>
         <footer className="pb-6 text-center text-xs text-muted">
-          {t("Şirketinizin envanteri, tek bir yerde.", "Your company’s inventory, all in one place.")}
+          {t(
+            "Şirketinizin envanteri, tek bir yerde.",
+            "Your company’s inventory, all in one place.",
+          )}
         </footer>
       </div>
     );
@@ -94,7 +121,7 @@ export function AppShell({
       >
         {m.app.skip}
       </a>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[244px] flex-col bg-sidebar px-4 text-on-brand lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[244px] flex-col overflow-y-auto bg-sidebar px-4 text-on-brand lg:flex">
         <Link href="/" className="flex items-center gap-3 px-3 py-9">
           <div className="grid size-10 place-items-center rounded-xl border border-sidebar-muted/25">
             <Boxes className="size-6" strokeWidth={1.5} />

@@ -21,4 +21,12 @@ public sealed class SuppliersController(ISender sender) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<SupplierDto>>> GetAll(CancellationToken ct) => Ok(await sender.Send(new GetSuppliersQuery(), ct));
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<SupplierDto>> GetById(Guid id, CancellationToken ct) => Ok(await sender.Send(new GetSupplierByIdQuery(id), ct));
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    public async Task<IActionResult> Update(Guid id, InventoryManagement.Application.Suppliers.Commands.UpdateSupplier.UpdateSupplierCommand command, CancellationToken ct)
+    {
+        await sender.Send(command with { Id = id }, ct);
+        return NoContent();
+    }
 }

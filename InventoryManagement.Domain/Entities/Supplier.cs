@@ -15,4 +15,9 @@ public class Supplier : CompanyEntity
 
     public string Name { get; private set; } = null!;
     public string Email { get; private set; } = null!;
+    public void Update(string name, string email)
+    {
+        Name = name.Trim();
+        Email = email.Trim().ToLowerInvariant();
+    }
 }
