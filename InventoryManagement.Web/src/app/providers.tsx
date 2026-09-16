@@ -7,6 +7,7 @@ import { makeStore } from "@/store";
 import { I18nProvider } from "@/lib/i18n/provider";
 import type { Locale } from "@/lib/i18n";
 import { AuthProvider } from "@/features/auth/components/auth-provider";
+import { CompanyProvider } from "@/features/companies/company-provider";
 import type { AuthConfig } from "@/features/auth/types/auth";
 export function Providers({
   children,
@@ -23,7 +24,9 @@ export function Providers({
     <I18nProvider locale={locale}>
       <ReduxProvider store={store}>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider config={authConfig}>{children}</AuthProvider>
+          <AuthProvider config={authConfig}>
+            <CompanyProvider>{children}</CompanyProvider>
+          </AuthProvider>
         </QueryClientProvider>
       </ReduxProvider>
     </I18nProvider>

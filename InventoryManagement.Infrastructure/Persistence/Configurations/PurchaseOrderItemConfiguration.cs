@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -24,7 +24,7 @@ public class PurchaseOrderItemConfiguration : IEntityTypeConfiguration<PurchaseO
 
         builder.HasOne<Product>()
             .WithMany()
-            .HasForeignKey(x => x.ProductId)
+            .HasForeignKey(x => new { x.CompanyId, x.ProductId }).HasPrincipalKey(x => new { x.CompanyId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -1,9 +1,9 @@
-﻿using InventoryManagement.Domain.Common;
+using InventoryManagement.Domain.Common;
 using InventoryManagement.Domain.Exceptions;
 
 namespace InventoryManagement.Domain.Entities;
 
-public class PurchaseOrderItem : Entity
+public class PurchaseOrderItem : CompanyEntity
 {
     private PurchaseOrderItem() { }
 

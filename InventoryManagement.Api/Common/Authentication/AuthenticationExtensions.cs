@@ -42,6 +42,11 @@ public static class AuthenticationExtensions
                     OnTokenValidated = context =>
                     {
                         var claims = (ClaimsIdentity)context.Principal!.Identity!;
+                        if (string.IsNullOrWhiteSpace(claims.FindFirst("sub")?.Value))
+                        {
+                            context.Fail("Missing subject claim.");
+                            return Task.CompletedTask;
+                        }
                         var realmAccess = claims.FindFirst("realm_access")?.Value;
                         if (realmAccess is not null)
                         {
@@ -72,9 +77,9 @@ public static class AuthenticationExtensions
         services.AddAuthorization(options =>
         {
             options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-            options.AddPolicy(InventoryPolicies.Read, policy => policy.RequireAuthenticatedUser().RequireRole("Admin", "User"));
-            options.AddPolicy(InventoryPolicies.Manage, policy => policy.RequireAuthenticatedUser().RequireRole("Admin"));
-            options.AddPolicy(InventoryPolicies.Transfer, policy => policy.RequireAuthenticatedUser().RequireRole("Admin", "User"));
+            options.AddPolicy(InventoryPolicies.Read, policy => policy.RequireAuthenticatedUser().RequireClaim("company_role", "Owner", "Manager", "Operator", "Viewer"));
+            options.AddPolicy(InventoryPolicies.Manage, policy => policy.RequireAuthenticatedUser().RequireClaim("company_role", "Owner", "Manager"));
+            options.AddPolicy(InventoryPolicies.Transfer, policy => policy.RequireAuthenticatedUser().RequireClaim("company_role", "Owner", "Manager", "Operator"));
         });
         return services;
     }

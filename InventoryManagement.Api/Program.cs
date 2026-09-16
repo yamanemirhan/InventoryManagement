@@ -12,6 +12,8 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<CompanyContext>();
+builder.Services.AddScoped<InventoryManagement.Application.Common.Interfaces.ICompanyContext>(sp => sp.GetRequiredService<CompanyContext>());
 builder.Services.AddInventoryAuthentication(builder.Configuration, builder.Environment);
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
@@ -51,6 +53,7 @@ app.UseRequestLocalization(options => options.SetDefaultCulture("en")
     .AddSupportedCultures("en", "tr").AddSupportedUICultures("en", "tr"));
 
 app.UseAuthentication();
+app.UseMiddleware<CompanyContextMiddleware>();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health").AllowAnonymous();

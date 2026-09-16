@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -24,17 +24,17 @@ public class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement
 
         builder.HasOne<Product>()
             .WithMany()
-            .HasForeignKey(x => x.ProductId)
+            .HasForeignKey(x => new { x.CompanyId, x.ProductId }).HasPrincipalKey(x => new { x.CompanyId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Warehouse>()
             .WithMany()
-            .HasForeignKey(x => x.WarehouseId)
+            .HasForeignKey(x => new { x.CompanyId, x.WarehouseId }).HasPrincipalKey(x => new { x.CompanyId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Warehouse>()
             .WithMany()
-            .HasForeignKey(x => x.RelatedWarehouseId)
+            .HasForeignKey(x => new { x.CompanyId, x.RelatedWarehouseId }).HasPrincipalKey(x => new { x.CompanyId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

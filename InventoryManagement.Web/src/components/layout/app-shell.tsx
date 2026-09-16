@@ -1,5 +1,10 @@
 "use client";
 import Link from "next/link";
+import {
+  CompanySwitcher,
+  useCompany,
+  useCompanyText,
+} from "@/features/companies/company-provider";
 import { Preferences } from "./preferences";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { AuthGate } from "@/features/auth/components/auth-gate";
@@ -32,6 +37,8 @@ export function AppShell({
   initialAccent: "forest" | "indigo";
 }) {
   const auth = useAuth();
+  const { company } = useCompany();
+  const t = useCompanyText();
   const { m } = useI18n();
   const nav = [
     { href: "/", label: m.app.overview, icon: PanelTop },
@@ -42,6 +49,17 @@ export function AppShell({
     { href: "/purchase-orders", label: m.nav.orders, icon: ClipboardList },
   ];
 
+  nav.push({
+    href: "/companies",
+    label: t("Şirket ve ekip", "Company & team"),
+    icon: UsersRound,
+  });
+  if (auth.admin)
+    nav.push({
+      href: "/admin",
+      label: t("Platform yönetimi", "Platform administration"),
+      icon: PanelTop,
+    });
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const open = useAppSelector((s) => s.inventoryUi.sidebarOpen);
@@ -101,7 +119,9 @@ export function AppShell({
           {auth.status === "authenticated" && (
             <div className="mt-4 space-y-2 text-xs">
               <p className="text-sidebar-muted">
-                {auth.admin ? m.auth.admin : m.auth.user}
+                {auth.admin
+                  ? t("Platform yöneticisi", "Platform admin")
+                  : (company?.role ?? m.auth.user)}
               </p>
               <button
                 className="block text-on-brand"
@@ -140,6 +160,7 @@ export function AppShell({
             <ChevronRight className="hidden size-3 text-muted sm:inline" />
             <span className="truncate font-medium">{current.label}</span>
           </div>
+          <CompanySwitcher />
           <Preferences
             initialMode={initialMode}
             initialAccent={initialAccent}

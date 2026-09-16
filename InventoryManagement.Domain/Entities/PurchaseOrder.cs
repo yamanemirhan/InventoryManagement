@@ -1,11 +1,11 @@
-﻿
+
 using InventoryManagement.Domain.Common;
 using InventoryManagement.Domain.Enums;
 using InventoryManagement.Domain.Exceptions;
 
 namespace InventoryManagement.Domain.Entities;
 
-public class PurchaseOrder : Entity
+public class PurchaseOrder : CompanyEntity
 {
     private readonly List<PurchaseOrderItem> _items = [];
 

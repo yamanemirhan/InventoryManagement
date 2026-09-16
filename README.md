@@ -8,7 +8,7 @@ Inventory and purchasing application with warehouse-level stock, transfers, supp
 - All-warehouse and per-warehouse stock quantities, search and movement history.
 - Purchase order lifecycle with atomic receipt and concurrency protection.
 - Keycloak email/password authentication and optional Google identity brokering.
-- API-enforced Admin/User authorization and role-aware actions.
+- Company memberships, company-scoped authorization and a platform administration panel.
 - English and Turkish interfaces; dark/light modes with shared forest/indigo color tokens.
 - Responsive forms, loading skeletons and accessible confirmation dialogs.
 
@@ -38,17 +38,13 @@ Prerequisites: .NET 10 SDK, Node.js 24, Docker Compose and EF Core 10 CLI tools.
 Local addresses: frontend `http://localhost:3000`, API `http://localhost:5138`, Keycloak `http://localhost:8088`.
 The local business database uses documented development-only credentials and binds to loopback. Server environments require explicit credentials and HTTPS identity configuration.
 
-## Authorization
+## Companies and authorization
 
-| Operation | Admin | User |
-| --- | --- | --- |
-| Read inventory, suppliers and orders | Yes | Yes |
-| Transfer stock | Yes | Yes |
-| Create master data and purchase orders | Yes | No |
-| Receive stock and manage purchase order lifecycle | Yes | No |
+Users can belong to multiple companies with separate Owner, Manager, Operator or Viewer roles. Inventory data is isolated by company in API queries, writes and database relationships. The workspace selector switches the active company; `/companies` manages company creation and membership.
 
-Self-registration grants User. Assign Admin explicitly through Keycloak.
+Keycloak `Admin` is the platform administrator and can manage companies, memberships and the application user directory through `/admin`. New registration does not grant access to existing inventory. Company owners manage membership; Owners and Managers manage inventory; Operators can transfer stock; Viewers have read-only access.
 
+See the [company architecture and phased rollout plan (Turkish)](docs/company-workspaces.md) for permissions, migration, legacy data access and rollback requirements. Deploy the API and frontend together after applying the migration.
 ## Validation
 
 ```sh

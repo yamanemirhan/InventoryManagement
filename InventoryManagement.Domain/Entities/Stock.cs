@@ -1,10 +1,10 @@
-﻿
+
 using InventoryManagement.Domain.Common;
 using InventoryManagement.Domain.Exceptions;
 
 namespace InventoryManagement.Domain.Entities;
 
-public class Stock : Entity
+public class Stock : CompanyEntity
 {
     private Stock() { }
     public Stock(Guid productId, Guid warehouseId)

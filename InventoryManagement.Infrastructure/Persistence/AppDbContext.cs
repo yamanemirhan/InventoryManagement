@@ -1,15 +1,20 @@
-﻿
+
 using InventoryManagement.Application.Common.Exceptions;
 using InventoryManagement.Application.Common.Interfaces;
 using InventoryManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using InventoryManagement.Domain.Common;
 
 
 namespace InventoryManagement.Infrastructure.Persistence;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IUnitOfWork
+public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContext? companyContext = null) : DbContext(options), IUnitOfWork
 {
+    public Guid CurrentCompanyId => companyContext?.CompanyId ?? Guid.Empty;
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<CompanyMember> CompanyMembers => Set<CompanyMember>();
+    public DbSet<ApplicationUser> ApplicationUsers => Set<ApplicationUser>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<Stock> Stocks => Set<Stock>();
@@ -23,10 +28,41 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        modelBuilder.Entity<Company>().Property(x => x.Name).HasMaxLength(200);
+        modelBuilder.Entity<ApplicationUser>().HasKey(x => x.SubjectId);
+        modelBuilder.Entity<ApplicationUser>().Property(x => x.SubjectId).HasMaxLength(200);
+        modelBuilder.Entity<ApplicationUser>().Property(x => x.Name).HasMaxLength(300);
+        modelBuilder.Entity<ApplicationUser>().Property(x => x.Email).HasMaxLength(320);
+        modelBuilder.Entity<CompanyMember>().Property(x => x.SubjectId).HasMaxLength(200);
+        modelBuilder.Entity<CompanyMember>().Property(x => x.Role).HasMaxLength(20);
+        modelBuilder.Entity<CompanyMember>().HasIndex(x => new { x.CompanyId, x.SubjectId }).IsUnique();
+        modelBuilder.Entity<CompanyMember>().HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CompanyMember>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        ConfigureCompany<Product>(modelBuilder);
+        ConfigureCompany<Warehouse>(modelBuilder);
+        ConfigureCompany<Supplier>(modelBuilder);
+        ConfigureCompany<Stock>(modelBuilder);
+        ConfigureCompany<StockMovement>(modelBuilder);
+        ConfigureCompany<PurchaseOrder>(modelBuilder);
+        ConfigureCompany<PurchaseOrderItem>(modelBuilder);
+    }
+
+    private void ConfigureCompany<T>(ModelBuilder modelBuilder) where T : CompanyEntity
+    {
+        modelBuilder.Entity<T>().HasQueryFilter(x => x.CompanyId == CurrentCompanyId);
+        modelBuilder.Entity<T>().HasAlternateKey(x => new { x.CompanyId, x.Id });
+        modelBuilder.Entity<T>().HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        foreach (var entry in ChangeTracker.Entries<CompanyEntity>().Where(x => x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
+        {
+            if (CurrentCompanyId == Guid.Empty) throw new InvalidOperationException("Select a company first.");
+            if (entry.State == EntityState.Added) entry.Property(x => x.CompanyId).CurrentValue = CurrentCompanyId;
+            else if (entry.Entity.CompanyId != CurrentCompanyId || entry.Property(x => x.CompanyId).IsModified)
+                throw new InvalidOperationException("Company ownership cannot be changed.");
+        }
         try
         {
             return await base.SaveChangesAsync(cancellationToken);

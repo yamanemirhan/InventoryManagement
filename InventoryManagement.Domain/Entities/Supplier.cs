@@ -1,9 +1,9 @@
-﻿
+
 using InventoryManagement.Domain.Common;
 
 namespace InventoryManagement.Domain.Entities;
 
-public class Supplier : Entity
+public class Supplier : CompanyEntity
 {
     private Supplier() { }
 

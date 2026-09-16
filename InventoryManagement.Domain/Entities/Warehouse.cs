@@ -1,9 +1,9 @@
-﻿
+
 using InventoryManagement.Domain.Common;
 
 namespace InventoryManagement.Domain.Entities;
 
-public class Warehouse : Entity
+public class Warehouse : CompanyEntity
 {
     private Warehouse() { }
 

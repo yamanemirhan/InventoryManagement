@@ -15,6 +15,11 @@ export async function apiClient<T>(
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
   headers.set("Accept-Language", locale);
+  const companyId =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("inventory-company")
+      : null;
+  if (companyId) headers.set("X-Company-Id", companyId);
   const token = await getAccessToken();
   if (!token)
     throw new ApiError(m.auth.sessionExpired, 401, m.auth.sessionExpired);

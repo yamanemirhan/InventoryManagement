@@ -1,10 +1,12 @@
 "use client";
 import type { ReactNode } from "react";
-import { useAuth } from "./auth-provider";
+import { useCompany } from "@/features/companies/company-provider";
 export function AdminOnly({ children }: { children: ReactNode }) {
-  return useAuth().admin ? children : null;
+  const { company } = useCompany();
+  return company && ["Owner", "Manager"].includes(company.role)
+    ? children
+    : null;
 }
-
 export function ActionAccess({
   href,
   children,
@@ -12,6 +14,10 @@ export function ActionAccess({
   href: string;
   children: ReactNode;
 }) {
-  const auth = useAuth();
-  return href === "/stocks/transfer" || auth.admin ? children : null;
+  const { company } = useCompany();
+  const roles =
+    href === "/stocks/transfer"
+      ? ["Owner", "Manager", "Operator"]
+      : ["Owner", "Manager"];
+  return company && roles.includes(company.role) ? children : null;
 }

@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Common;
 using InventoryManagement.Domain.Enums;
 using InventoryManagement.Domain.Exceptions;
@@ -7,7 +7,7 @@ namespace InventoryManagement.Domain.Entities;
 
 // for audit/history purposes, we keep a record of all stock movements, including transfers between warehouses and adjustments.
 // This allows us to track the flow of inventory and maintain accurate records for reporting and analysis.
-public class StockMovement : Entity
+public class StockMovement : CompanyEntity
 {
     private StockMovement() { }
 

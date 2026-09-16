@@ -6,10 +6,17 @@ import { LoginPanel } from "./login-panel";
 import { useI18n } from "@/lib/i18n/provider";
 import { safeReturnPath } from "../lib/keycloak";
 import { LinkButton } from "@/components/ui/link-button";
+import {
+  useCompany,
+  useCompanyText,
+} from "@/features/companies/company-provider";
+import { CompanyPage } from "@/features/companies/company-page";
 import { Button } from "@/components/ui/button";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const auth = useAuth();
+  const workspace = useCompany();
+  const t = useCompanyText();
   const path = usePathname();
   const router = useRouter();
   const { m } = useI18n();
@@ -21,11 +28,31 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }
   }, [auth.status, path, router]);
   if (auth.status !== "authenticated") return <LoginPanel />;
-  const canRead = auth.admin || auth.user;
+  if (workspace.loading) return <p role="status">{m.auth.checking}</p>;
+  if (workspace.error)
+    return (
+      <div className="panel space-y-4 p-6">
+        <p role="alert">{workspace.error.message}</p>
+        <Button onClick={workspace.retry}>{t("Tekrar dene", "Retry")}</Button>
+      </div>
+    );
+  if (path === "/admin" && !auth.admin)
+    return <p role="alert">{m.auth.forbidden}</p>;
+  if (path === "/companies" || path === "/admin") return children;
+  if (!workspace.company) return <CompanyPage />;
+  const canRead = !!workspace.company;
+  const canManage = ["Owner", "Manager"].includes(workspace.company.role);
+  const canTransfer = ["Owner", "Manager", "Operator"].includes(
+    workspace.company.role,
+  );
   const adminPage =
     /\/(products|warehouses|suppliers|purchase-orders)\/new$/.test(path) ||
     path === "/stocks/increase";
-  if (!canRead || (adminPage && !auth.admin))
+  if (
+    !canRead ||
+    (adminPage && !canManage) ||
+    (path === "/stocks/transfer" && !canTransfer)
+  )
     return (
       <div className="panel mx-auto max-w-xl space-y-5 p-8">
         <h1 className="text-xl font-semibold">{m.auth.forbidden}</h1>

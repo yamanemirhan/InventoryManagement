@@ -4,6 +4,11 @@ internal static class ErrorMessages
 {
  private static readonly IReadOnlyDictionary<string,string> Turkish = new Dictionary<string,string>
  {
+  ["Load your session first."] = "Önce oturumunuzu yenileyin.",
+  ["The user must sign in to the application first. Use their account ID."] = "Kullanıcı önce uygulamaya giriş yapmalıdır. Hesap kimliğini kullanın.",
+  ["A company must retain at least one owner."] = "Şirketin en az bir sahibi olmalıdır.",
+  ["Select a company first."] = "Önce bir şirket seçin.",
+  ["Company ownership cannot be changed."] = "Kaydın ait olduğu şirket değiştirilemez.",
   ["Validation Error"] = "Doğrulama hatası",
   ["Not found"] = "Bulunamadı",
   ["Business rule violation"] = "İş kuralı ihlali",
