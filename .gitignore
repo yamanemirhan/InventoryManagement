@@ -71,3 +71,24 @@ Desktop.ini
 # Docker local overrides
 docker-compose.override.yml
 compose.override.yml
+
+# Documentation: publish README files only.
+*.md
+!README.md
+!**/README.md
+
+# Infrastructure: keep only reusable, secret-free local identity templates.
+/deploy/*
+!/deploy/keycloak/
+/deploy/keycloak/*
+!/deploy/keycloak/.env.example
+!/deploy/keycloak/development-realm.json
+!/deploy/keycloak/google-provider.template.json
+
+# Scripts: explicitly allow the reusable CI/development entry points.
+/scripts/*
+!/scripts/configure-identity.mjs
+!/scripts/configure-staging-proxy.py
+!/scripts/deploy-production.sh
+!/scripts/deploy-staging.sh
+!/scripts/rollback-production.sh

@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Application.Common.Interfaces;
 using InventoryManagement.Infrastructure.Persistence;
 using InventoryManagement.Infrastructure.Persistence.Repositories;
@@ -20,6 +20,8 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<ICompanyReadRepository, CompanyReadRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IProductReadRepository, ProductReadRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();

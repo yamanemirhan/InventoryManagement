@@ -170,8 +170,8 @@ jobs:
       packages: read
     env:
       AZURE_CORE_OUTPUT: none
-      AZURE_RESOURCE_GROUP: rg-inventory-learning
-      AZURE_NSG_NAME: nsg-inventory-learning
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_NSG_NAME: ${{ vars.AZURE_NSG_NAME }}
       TEMPORARY_SSH_RULE: Allow-SSH-GitHub-Runner
       API_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-api
       FRONTEND_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-web
@@ -331,12 +331,12 @@ jobs:
       packages: read
     env:
       AZURE_CORE_OUTPUT: none
-      AZURE_RESOURCE_GROUP: rg-inventory-learning
-      AZURE_NSG_NAME: nsg-inventory-learning
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_NSG_NAME: ${{ vars.AZURE_NSG_NAME }}
       TEMPORARY_SSH_RULE: Allow-SSH-GitHub-Runner
       API_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-api
       FRONTEND_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/inventory-management-web
-      STAGING_HEALTH_URL: https://staging-inventory-yamanemirhan.duckdns.org/api/health
+      STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL }}
 
     steps:
       - name: Check out repository

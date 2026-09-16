@@ -1,4 +1,4 @@
-﻿
+
 using FluentValidation;
 using InventoryManagement.Application.Common.Exceptions;
 using InventoryManagement.Domain.Exceptions;
@@ -35,6 +35,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 
         var (statusCode, title) = exception switch
         {
+            ForbiddenException => (StatusCodes.Status403Forbidden, "Access denied"),
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Not found"),
             DomainException => (StatusCodes.Status400BadRequest, "Business rule violation"),
             ConcurrencyException => (StatusCodes.Status409Conflict, "Concurrency conflict"),

@@ -4,6 +4,10 @@ internal static class ErrorMessages
 {
  private static readonly IReadOnlyDictionary<string,string> Turkish = new Dictionary<string,string>
  {
+  ["Company not found."] = "Şirket bulunamadı.",
+  ["Company member not found."] = "Şirket üyesi bulunamadı.",
+  ["Access denied"] = "Erişim reddedildi",
+  ["You do not have permission to perform this action."] = "Bu işlem için yetkiniz yok.",
   ["Load your session first."] = "Önce oturumunuzu yenileyin.",
   ["The user must sign in to the application first. Use their account ID."] = "Kullanıcı önce uygulamaya giriş yapmalıdır. Hesap kimliğini kullanın.",
   ["A company must retain at least one owner."] = "Şirketin en az bir sahibi olmalıdır.",

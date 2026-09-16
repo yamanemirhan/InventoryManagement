@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using InventoryManagement.Application.Common.Interfaces;
-using InventoryManagement.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+
+
 
 namespace InventoryManagement.Api.Common.Authentication;
 
@@ -12,7 +12,7 @@ public sealed class CompanyContext : ICompanyContext
 
 public sealed class CompanyContextMiddleware(RequestDelegate next)
 {
-    public async Task InvokeAsync(HttpContext http, AppDbContext db, CompanyContext company)
+    public async Task InvokeAsync(HttpContext http, ICompanyReadRepository repository, CompanyContext company)
     {
         var policies = http.GetEndpoint()?.Metadata.GetOrderedMetadata<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>();
         var inventory = policies?.Any(x => x.Policy is InventoryPolicies.Read or InventoryPolicies.Manage or InventoryPolicies.Transfer) == true;
@@ -23,9 +23,10 @@ public sealed class CompanyContextMiddleware(RequestDelegate next)
                 await Results.Problem(statusCode: 400, detail: "Select a company first.").ExecuteAsync(http);
                 return;
             }
-            var active = await db.Companies.AnyAsync(x => x.Id == id && x.IsActive, http.RequestAborted);
-            var subject = http.User.FindFirstValue("sub");
-            var role = await db.CompanyMembers.Where(x => x.CompanyId == id && x.SubjectId == subject).Select(x => x.Role).SingleOrDefaultAsync(http.RequestAborted);
+            var subject = http.User.FindFirstValue("sub")!;
+            var access = await repository.GetAccessAsync(id, subject, http.RequestAborted);
+            var active = access?.IsActive == true;
+            var role = access?.Role;
             if (!active || (role is null && !http.User.IsInRole("Admin")))
             {
                 await Results.Problem(statusCode: 403, detail: "Company access denied.").ExecuteAsync(http);

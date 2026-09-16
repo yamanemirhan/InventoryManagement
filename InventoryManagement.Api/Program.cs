@@ -12,6 +12,8 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<InventoryManagement.Application.Common.Interfaces.ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<CompanyContext>();
 builder.Services.AddScoped<InventoryManagement.Application.Common.Interfaces.ICompanyContext>(sp => sp.GetRequiredService<CompanyContext>());
 builder.Services.AddInventoryAuthentication(builder.Configuration, builder.Environment);

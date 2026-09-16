@@ -4,7 +4,7 @@ Next.js App Router frontend for the Inventory Management API. The package name i
 
 ## Local development
 
-Requires Node.js 20.9+, the .NET 10 API, PostgreSQL and Keycloak. First follow [identity setup](../IDENTITY_ENVIRONMENTS.md). From the repository root:
+Requires Node.js 20.9+, the .NET 10 API, PostgreSQL and Keycloak. First follow the [root setup instructions](../README.md#getting-started). From the repository root:
 
 ```powershell
 docker compose up -d postgres
@@ -70,8 +70,7 @@ npm run build
 
 ## Identity, themes, language and stock totals
 
-Keycloak provides authentication and Admin/User authorization. See
-[the identity environments guide](../IDENTITY_ENVIRONMENTS.md) before running the application.
+Keycloak provides authentication. Company roles and platform Admin access are documented in the [root README](../README.md#companies-and-authorization).
 The default appearance is dark with a forest accent; the default language is English.
 Header preferences switch dark/light, forest/indigo and English/Turkish across all application pages.
 The stock overview now includes all-warehouse totals and a warehouse selector.

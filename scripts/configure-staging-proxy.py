@@ -8,8 +8,18 @@ import re
 import shutil
 import subprocess
 import tempfile
+from urllib.parse import urlsplit
 
-DOMAIN = "staging-inventory-yamanemirhan.duckdns.org"
+# Read only the public identity URL from the server's untracked environment file.
+# Do not source or print the file; it also contains database credentials.
+environment = pathlib.Path(".env.staging").read_text()
+match = re.search(r"(?m)^KEYCLOAK_URL=(.+)$", environment)
+if not match:
+    raise RuntimeError("KEYCLOAK_URL is missing from .env.staging")
+identity_url = urlsplit(match[1].strip().strip("\"'"))
+if identity_url.scheme != "https" or not identity_url.hostname or identity_url.username or identity_url.password:
+    raise RuntimeError("KEYCLOAK_URL must be an HTTPS URL without credentials")
+DOMAIN = identity_url.hostname
 
 # Report only the error category/count, never authentication URLs or cookies.
 for log in pathlib.Path("/var/log/nginx").glob("*error*.log"):
