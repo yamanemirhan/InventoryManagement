@@ -60,6 +60,7 @@
         "post.logout.redirect.uris": "http://localhost:3000/auth/login"
       },
       "defaultClientScopes": [
+        "basic",
         "web-origins",
         "acr",
         "profile",

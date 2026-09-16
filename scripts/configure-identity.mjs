@@ -25,6 +25,29 @@ async function adminHeaders() {
   return {'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json'};
 }
 
+
+// Keycloak 25+ emits the access-token subject through the default basic scope.
+// Preserve all other client scopes and identity-provider settings.
+async function ensureBasicClientScope(headers, realmUrl, clientId) {
+  const scopesResponse = await fetch(`${realmUrl}/client-scopes`, {headers});
+  if (!scopesResponse.ok) throw new Error(`Client scope lookup failed (${scopesResponse.status}).`);
+  const scopes = await scopesResponse.json();
+  const basic = scopes.find(scope => scope.name === 'basic' && scope.protocol === 'openid-connect');
+  if (!basic) throw new Error('The realm is missing the built-in basic client scope.');
+  const endpoint = `${realmUrl}/clients/${clientId}/default-client-scopes`;
+  const currentResponse = await fetch(endpoint, {headers});
+  if (!currentResponse.ok) throw new Error(`Default scope lookup failed (${currentResponse.status}).`);
+  const current = await currentResponse.json();
+  if (!current.some(scope => scope.id === basic.id)) {
+    const update = await fetch(`${endpoint}/${basic.id}`, {method: 'PUT', headers});
+    if (!update.ok) throw new Error(`Basic scope assignment failed (${update.status}).`);
+  }
+  const verification = await fetch(endpoint, {headers});
+  if (!verification.ok || !(await verification.json()).some(scope => scope.id === basic.id)) {
+    throw new Error('Basic client scope verification failed.');
+  }
+}
+
 if (command === 'realm') {
   const definition = JSON.parse(fs.readFileSync(path.join(root, 'deploy/keycloak/development-realm.json'), 'utf8'));
   definition.realm = realm;
@@ -38,6 +61,15 @@ if (command === 'realm') {
   fs.mkdirSync(output, {recursive: true});
   fs.writeFileSync(path.join(output, realm + '-realm.json'), JSON.stringify(definition, null, 2));
   console.log(`Realm definition: .local/identity/realms/${realm}-realm.json. Import into the matching Keycloak environment.`);
+} else if (command === 'token-scopes') {
+  const headers = await adminHeaders();
+  const realmUrl = `${identityUrl}/admin/realms/${realm}`;
+  const response = await fetch(`${realmUrl}/clients?clientId=inventory-web`, {headers});
+  if (!response.ok) throw new Error(`Client lookup failed (${response.status}).`);
+  const clients = await response.json();
+  if (clients.length !== 1) throw new Error('Expected exactly one inventory-web client.');
+  await ensureBasicClientScope(headers, realmUrl, clients[0].id);
+  console.log(`Required access-token scope verified for ${realm}/inventory-web.`);
 } else if (command === 'sync') {
   const headers = await adminHeaders();
   const realmUrl = `${identityUrl}/admin/realms/${realm}`;
@@ -90,6 +122,7 @@ if (command === 'realm') {
   if (verifiedWeb.attributes?.['pkce.code.challenge.method'] !== 'S256' || verifiedWeb.attributes?.['post.logout.redirect.uris'] !== origin + '/auth/login') {
     throw new Error('Client attributes were not persisted by Keycloak.');
   }
+  await ensureBasicClientScope(headers, realmUrl, web.id);
   console.log(`Realm ${realm} and inventory-web synchronized with ${origin}.`);
 } else if (command === 'smtp') {
   for (const key of ['SMTP_FROM', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USERNAME', 'SMTP_PASSWORD']) if (!env[key]) throw new Error(`Missing ${key}. Set it in the untracked environment file.`);
@@ -155,4 +188,4 @@ if (command === 'realm') {
   }
   console.log(`Google provider configured for ${realm}. Google authorized redirect URI: ${identityUrl}/realms/${realm}/broker/google/endpoint`);
   console.log('Set GOOGLE_LOGIN_ENABLED=true on the frontend and restart it.');
-} else throw new Error('Usage: node scripts/configure-identity.mjs realm|sync|smtp|smtp-test|google [untracked-env-file]');
+} else throw new Error('Usage: node scripts/configure-identity.mjs realm|sync|token-scopes|smtp|smtp-test|google [untracked-env-file]');

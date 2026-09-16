@@ -35,6 +35,8 @@ Prerequisites: .NET 10 SDK, Node.js 24, Docker Compose and EF Core 10 CLI tools.
 4. Start the API with `dotnet run --project InventoryManagement.Api --launch-profile http`.
 5. In `InventoryManagement.Web`, copy `.env.example` to `.env.local` on first setup, then run `npm ci` and `npm run dev`.
 
+Existing Keycloak realms must assign the `basic` default client scope to `inventory-web` so access tokens include the required `sub` claim. To repair only that assignment without changing Google/SMTP settings, run `node scripts/configure-identity.mjs token-scopes <private-environment-file>`, then sign in again to obtain a new token. The `sync` command also ensures this scope is assigned.
+
 Local addresses: frontend `http://localhost:3000`, API `http://localhost:5138`, Keycloak `http://localhost:8088`.
 The local business database uses documented development-only credentials and binds to loopback. Server environments require explicit credentials and HTTPS identity configuration.
 
