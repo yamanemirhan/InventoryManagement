@@ -37,7 +37,7 @@ export function MembersPanel({ companyId }: { companyId: string }) {
   const [remove, setRemove] = useState<Member | null>(null);
   const query = useQuery({
     queryKey: ["company-members", companyId],
-    queryFn: () => apiClient<Member[]>(`/companies/${companyId}/members`),
+    queryFn: () => apiClient<Member[]>(`/api/companies/${companyId}/members`),
   });
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -45,7 +45,7 @@ export function MembersPanel({ companyId }: { companyId: string }) {
     setError("");
     setNotice("");
     try {
-      await apiClient(`/companies/${companyId}/members`, {
+      await apiClient(`/api/companies/${companyId}/members`, {
         method: "PUT",
         body: { subjectId: subject.trim(), role },
       });
@@ -67,7 +67,7 @@ export function MembersPanel({ companyId }: { companyId: string }) {
     setBusy(true);
     setError("");
     try {
-      await apiClient(`/companies/${companyId}/members/${remove.id}`, {
+      await apiClient(`/api/companies/${companyId}/members/${remove.id}`, {
         method: "DELETE",
       });
       setRemove(null);
@@ -208,7 +208,7 @@ export function CompanyPage() {
     setBusy(true);
     setError("");
     try {
-      const created = await apiClient<{ id: string }>("/companies", {
+      const created = await apiClient<{ id: string }>("/api/companies", {
         method: "POST",
         body: { name: name.trim() },
       });

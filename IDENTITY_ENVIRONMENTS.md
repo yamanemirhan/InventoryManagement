@@ -138,7 +138,7 @@ location ^~ /identity/ {
 }
 ```
 
-`proxy_pass` sonuna `/` eklemeyin: `/identity` yolu korunmalıdır. Repo içindeki `deploy/nginx/inventory-management-staging.conf` ve production karşılığı bu bloğu içerir; Git'e push, sistemdeki aktif Nginx dosyasını kendiliğinden güncellemez.
+`proxy_pass` sonuna `/` eklemeyin: `/identity` yolu korunmalıdır. Repo içindeki `deploy/nginx/inventory-management-staging.conf` ve production karşılığı bu bloğu içerir; Staging deploy akışı yalnızca mevcut `/identity/` bloğunun Keycloak yanıt tamponlarını `scripts/configure-staging-proxy.py` ile günceller; dosyayı yedekler, `nginx -t` sonrasında yeniden yükler ve hata durumunda geri alır. Diğer Nginx/TLS ayarları ve production yapılandırması otomatik değiştirilmez.
 
 ```sh
 sudo nginx -t && sudo systemctl reload nginx

@@ -65,6 +65,27 @@ export function AppShell({
   const open = useAppSelector((s) => s.inventoryUi.sidebarOpen);
   const current =
     nav.find((n) => n.href !== "/" && pathname.startsWith(n.href)) ?? nav[0];
+  if (auth.status !== "authenticated") {
+    return (
+      <div className="flex min-h-screen flex-col bg-subtle">
+        <header className="flex items-center justify-between gap-4 border-b border-line bg-surface px-5 py-5 sm:px-10">
+          <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight">
+            <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand">
+              <Boxes className="size-6" strokeWidth={1.5} />
+            </span>
+            {m.app.name}
+          </Link>
+          <Preferences initialMode={initialMode} initialAccent={initialAccent} />
+        </header>
+        <main id="main-content" className="flex flex-1 items-center justify-center px-5 py-10">
+          <div className="w-full max-w-md"><AuthGate>{children}</AuthGate></div>
+        </main>
+        <footer className="pb-6 text-center text-xs text-muted">
+          {t("Şirketinizin envanteri, tek bir yerde.", "Your company’s inventory, all in one place.")}
+        </footer>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen">
       <a

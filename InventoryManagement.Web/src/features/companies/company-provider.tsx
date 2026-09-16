@@ -27,7 +27,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     staleTime: 0,
     refetchOnWindowFocus: true,
     queryFn: async () => {
-      const session = await apiClient<Session>("/companies/session");
+      const session = await apiClient<Session>("/api/companies/session");
       const saved = sessionStorage.getItem("inventory-company");
       const sameUser =
         sessionStorage.getItem("inventory-company-user") === session.subjectId;

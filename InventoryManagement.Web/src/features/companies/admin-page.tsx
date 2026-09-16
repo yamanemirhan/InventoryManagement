@@ -32,14 +32,14 @@ export function AdminPage() {
   const query = useQuery({
     queryKey: ["platform-admin"],
     enabled: !!session?.platformAdmin,
-    queryFn: () => apiClient<AdminData>("/companies/admin"),
+    queryFn: () => apiClient<AdminData>("/api/companies/admin"),
   });
   async function save() {
     if (!editing) return;
     setPending(true);
     setError("");
     try {
-      await apiClient(`/companies/${editing.id}`, {
+      await apiClient(`/api/companies/${editing.id}`, {
         method: "PATCH",
         body: editing,
       });
