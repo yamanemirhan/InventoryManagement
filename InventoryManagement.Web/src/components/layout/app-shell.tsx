@@ -6,6 +6,7 @@ import {
   useCompanyText,
 } from "@/features/companies/company-provider";
 import { Preferences } from "./preferences";
+import { NotificationCenter } from "@/features/realtime/realtime-provider";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { AuthGate } from "@/features/auth/components/auth-gate";
 import { usePathname } from "next/navigation";
@@ -209,6 +210,7 @@ export function AppShell({
             <span className="truncate font-medium">{current.label}</span>
           </div>
           <CompanySwitcher />
+          <NotificationCenter />
           <Preferences
             initialMode={initialMode}
             initialAccent={initialAccent}

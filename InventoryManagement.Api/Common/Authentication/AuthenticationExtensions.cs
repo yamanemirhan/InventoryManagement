@@ -39,6 +39,13 @@ public static class AuthenticationExtensions
                 };
                 options.Events = new JwtBearerEvents
                 {
+                    OnMessageReceived = context =>
+                    {
+                        if (context.Request.Path.StartsWithSegments("/api/realtime/workspace") &&
+                            context.Request.Query.TryGetValue("access_token", out var token))
+                            context.Token = token;
+                        return Task.CompletedTask;
+                    },
                     OnTokenValidated = context =>
                     {
                         var claims = (ClaimsIdentity)context.Principal!.Identity!;

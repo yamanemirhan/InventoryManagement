@@ -12,6 +12,7 @@ public sealed class ActivityEntryConfiguration : IEntityTypeConfiguration<Activi
         builder.Property(x => x.Action).HasMaxLength(20);
         builder.Property(x => x.ActorSubjectId).HasMaxLength(200);
         builder.HasIndex(x => new { x.CompanyId, x.CreatedAtUtc, x.Id });
+        builder.HasIndex(x => x.CreatedAtUtc).HasFilter("\"PublishedAtUtc\" IS NULL");
         builder.HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
     }
 }

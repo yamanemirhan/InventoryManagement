@@ -12,6 +12,9 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<InventoryManagement.Api.Realtime.WorkspaceConnections>();
+builder.Services.AddHostedService<InventoryManagement.Api.Realtime.WorkspaceEventDispatcher>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<InventoryManagement.Application.Common.Interfaces.ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<CompanyContext>();
@@ -61,5 +64,9 @@ app.UseAuthorization();
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapHealthChecks("/api/health").AllowAnonymous();
 app.MapControllers();
+app.MapHub<InventoryManagement.Api.Realtime.WorkspaceHub>("/api/realtime/workspace", options =>
+{
+    options.CloseOnAuthenticationExpiration = true;
+});
 
 app.Run();

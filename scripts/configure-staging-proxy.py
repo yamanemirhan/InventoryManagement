@@ -1,4 +1,4 @@
-"""Apply staging-only Keycloak response buffers to the active Nginx file.
+"""Apply staging-only Keycloak buffers and SignalR proxy settings.
 
 Run with sudo from deploy-staging.sh. Preserve all other proxy/TLS settings;
 validate before reload and restore the original file on any failure.
@@ -58,8 +58,46 @@ def update(match):
 updated, count = re.subn(pattern, update, original)
 if count != 1:
     raise RuntimeError("Expected exactly one staging /identity/ location")
+
+# Derive the SignalR upstream from the existing API route, preserving whether
+# that route strips /api/. Never hard-code private hosts or ports.
+api_pattern = r"(location\s+(?:\^~\s+)?/api/\s*\{)([^{}]*)(\})"
+api_matches = list(re.finditer(api_pattern, updated))
+if len(api_matches) != 1:
+    raise RuntimeError("Expected exactly one staging /api/ location")
+api_match = api_matches[0]
+upstreams = re.findall(r"proxy_pass\s+([^;]+);", api_match[2])
+if len(upstreams) != 1:
+    raise RuntimeError("Expected one API upstream")
+upstream = urlsplit(upstreams[0].strip())
+if upstream.scheme not in ("http", "https") or not upstream.netloc or upstream.query or "$" in upstream.geturl():
+    raise RuntimeError("Unsupported API upstream")
+target_path = upstream.path + "realtime/" if upstream.path.endswith("/") else upstream.path
+target = upstream._replace(path=target_path).geturl()
+realtime = f'''location ^~ /api/realtime/ {{
+        proxy_pass {target};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_read_timeout 120s;
+        # WebSocket/SSE authentication uses a query token; do not log it.
+        access_log off;
+    }}'''
+realtime_pattern = r"location\s+(?:\^~\s+)?/api/realtime/\s*\{[^{}]*\}"
+existing_realtime = list(re.finditer(realtime_pattern, updated))
+if len(existing_realtime) > 1:
+    raise RuntimeError("Multiple realtime proxy locations")
+if existing_realtime:
+    updated = re.sub(realtime_pattern, lambda _: realtime, updated)
+else:
+    updated = updated[:api_match.start()] + realtime + "\n    " + updated[api_match.start():]
+
 if updated == original:
-    print("Staging identity proxy buffers already configured", flush=True)
+    print("Staging identity and realtime proxy already configured", flush=True)
 else:
     backup_dir = pathlib.Path("/var/backups/inventory-nginx")
     backup_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -75,4 +113,4 @@ else:
         subprocess.run(["nginx", "-t"], check=True)
         subprocess.run(["systemctl", "reload", "nginx"], check=True)
         raise
-    print("Staging identity proxy buffers updated; Nginx validated and reloaded", flush=True)
+    print("Staging identity and realtime proxy updated; Nginx validated and reloaded", flush=True)

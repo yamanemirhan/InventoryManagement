@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<ICatalogRepository, CatalogRepository>();
         services.AddScoped<IKnowledgeRepository, KnowledgeRepository>();
         services.AddScoped<IWorkspaceReadRepository, WorkspaceReadRepository>();
+        services.AddScoped<IRealtimeEventStore, RealtimeEventStore>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<ICompanyReadRepository, CompanyReadRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();

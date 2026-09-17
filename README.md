@@ -62,6 +62,18 @@ This is data preparation for future RAG, not an AI integration. Future indexing 
 
 Apply the `WorkspaceResourcesAndActivity` migration before starting this release. It adds knowledge and activity tables without rewriting existing inventory.
 
+## Live updates and notifications
+
+SignalR connects authenticated browsers to `/api/realtime/workspace?companyId=...`. Company membership is checked on connection and again before delivery. Token expiry closes the connection; the client obtains a fresh token on reconnect. Company changes invalidate the current screen's queries, with a full data refresh after reconnect. The header bell shows a bounded, in-memory list of the current session's last 50 update notifications and an unread count. It is not a persistent personal inbox; offline changes are reconciled by fetching current data.
+
+Committed activity rows also serve as a small PostgreSQL outbox. A background dispatcher processes up to 200 rows every two seconds, publishing generic update signals and marking them processed. Rolled-back transactions produce no signals. Failed dispatches are retried, and clients deduplicate repeated signals. Notifications carry no record contents or actor identities. Existing historical activity is marked processed by the `RealtimeActivityDispatch` migration.
+
+The current deployment has one API instance per environment. Redis caching is deferred until measurements identify expensive repeat reads; RabbitMQ is deferred until independent workers or services need durable work queues. Before running multiple API replicas, introduce a SignalR backplane or managed SignalR service and coordinated outbox delivery. This single-instance dispatcher must not be treated as a multi-instance message bus.
+
+Staging deployment configures a dedicated Nginx realtime location with WebSocket upgrade headers, disabled buffering, a 120-second read timeout and disabled access logging (WebSocket/SSE URLs may contain bearer tokens). Apply equivalent settings to the production proxy before enabling this release there. Do not enable query-string logging for the hub in reverse proxies or request telemetry.
+
+Implementation references: [SignalR authentication](https://learn.microsoft.com/en-us/aspnet/core/signalr/authn-and-authz?view=aspnetcore-10.0) and [JavaScript reconnect behavior](https://learn.microsoft.com/en-us/aspnet/core/signalr/javascript-client?view=aspnetcore-10.0).
+
 ## Validation
 
 ```sh
