@@ -11,6 +11,7 @@ public sealed class WorkspaceEventDispatcher(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        var failures = 0;
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
@@ -48,11 +49,15 @@ public sealed class WorkspaceEventDispatcher(
                     }
                 }
                 if (pending.Count > 0) await store.MarkPublishedAsync(pending.Select(x => x.Id).ToArray(), stoppingToken);
+                failures = 0;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Workspace notification dispatch failed; pending events will be retried.");
+                failures++;
+                logger.LogError("Workspace dispatch failed with {ExceptionType}; attempt {Attempt}. Pending events will be retried.",
+                    ex.GetType().Name, failures);
+                await Task.Delay(TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, Math.Min(failures, 6)))), stoppingToken);
             }
         }
     }

@@ -2,8 +2,13 @@ using InventoryManagement.Api.Common.Exceptions;
 using InventoryManagement.Application;
 using InventoryManagement.Infrastructure;
 using InventoryManagement.Api.Common.Authentication;
+using InventoryManagement.Api.Common.Operations;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
+builder.Services.AddOperations();
 
 // Add services to the container.
 
@@ -51,6 +56,7 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<RequestDiagnosticsMiddleware>();
 app.UseExceptionHandler();
 
 app.UseCors("Frontend");
@@ -58,11 +64,13 @@ app.UseRequestLocalization(options => options.SetDefaultCulture("en")
     .AddSupportedCultures("en", "tr").AddSupportedUICultures("en", "tr"));
 
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseMiddleware<CompanyContextMiddleware>();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health").AllowAnonymous();
-app.MapHealthChecks("/api/health").AllowAnonymous();
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/api/health", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/api/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }).AllowAnonymous();
 app.MapControllers();
 app.MapHub<InventoryManagement.Api.Realtime.WorkspaceHub>("/api/realtime/workspace", options =>
 {

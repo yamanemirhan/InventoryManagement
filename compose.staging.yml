@@ -2,6 +2,10 @@ name: inventory-management-staging
 
 services:
   api:
+    logging:
+      driver: journald
+      options:
+        tag: inventory-staging-api
     image: ${API_IMAGE_REPOSITORY:-inventory-management-api}:${IMAGE_TAG:-local}
     build:
       context: .
@@ -40,6 +44,10 @@ services:
       - inventory_network
 
   frontend:
+    logging:
+      driver: journald
+      options:
+        tag: inventory-staging-web
     image: ${FRONTEND_IMAGE_REPOSITORY:-inventory-management-web}:${IMAGE_TAG:-local}
     build:
       context: .

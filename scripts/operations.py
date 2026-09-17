@@ -200,7 +200,9 @@ def notify(subject, message):
 def monitor():
     previous = json.loads((STATE / "monitor.json").read_text()) if (STATE / "monitor.json").exists() else {}
     failures = []
-    for stage in stages():
+    # Only staging is onboarded to the identity-enabled application today.
+    # Production liveness can be enabled explicitly during its release.
+    for stage in settings().get("monitorStages", ["staging"]):
         values = env_file(APP / f".env.{stage}")
         origin = values.get("KEYCLOAK_URL", "").split("/identity")[0]
         for route in ("/", "/api/health", "/api/health/ready", f"/identity/realms/inventory-{stage}/.well-known/openid-configuration"):
@@ -244,7 +246,10 @@ def install(recipient):
     key.write_bytes(passphrase)
     key.chmod(0o600)
     config = settings()
+    config.setdefault("monitorStages", ["staging"])
     if recipient:
+        if recipient == "self":
+            recipient = env_file(pathlib.Path("/opt/inventory-identity/staging/.env.identity"))["SMTP_USERNAME"]
         config.update(alertRecipient=recipient, smtpEnvFile="/opt/inventory-identity/staging/.env.identity")
     save(CONFIG / "config.json", config)
     destination = pathlib.Path("/opt/inventory-ops/operations.py")

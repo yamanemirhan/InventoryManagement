@@ -11,7 +11,10 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "An unhandled exception occurred.");
+        // Do not serialize exception messages: database/identity errors may contain private values.
+        if (exception is not (ValidationException or ForbiddenException or KeyNotFoundException or DomainException or ConcurrencyException or InvalidOperationException))
+            logger.LogError("Unhandled {ExceptionType}; TraceId {TraceId}; Stack {StackTrace}",
+                exception.GetType().Name, httpContext.TraceIdentifier, exception.StackTrace);
 
         if (exception is ValidationException validationException)
         {
@@ -23,6 +26,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = ErrorMessages.Localize("Validation Error"),
+                Extensions = { ["traceId"] = httpContext.TraceIdentifier },
             };
 
             httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -48,7 +52,8 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             Status = statusCode,
             Title = ErrorMessages.Localize(title),
             Detail = ErrorMessages.Localize(statusCode == 500 ? "An unexpected error occurred. Please try again." : exception.Message),
-            Extensions = { ["code"] = exception is ConcurrencyException ? "concurrency_conflict" : "request_failed" }
+            Extensions = { ["code"] = exception is ConcurrencyException ? "concurrency_conflict" : "request_failed",
+                ["traceId"] = httpContext.TraceIdentifier }
         };
 
         httpContext.Response.StatusCode = statusCode;

@@ -74,6 +74,20 @@ Staging deployment configures a dedicated Nginx realtime location with WebSocket
 
 Implementation references: [SignalR authentication](https://learn.microsoft.com/en-us/aspnet/core/signalr/authn-and-authz?view=aspnetcore-10.0) and [JavaScript reconnect behavior](https://learn.microsoft.com/en-us/aspnet/core/signalr/javascript-client?view=aspnetcore-10.0).
 
+## Operational reliability
+
+The API returns a correlation ID in `X-Request-Id` and error responses. JSON request logs contain route templates, status and elapsed time; they omit request bodies, headers and query strings. Server Compose files send API/frontend logs to the host's central system journal with `inventory-<environment>-api` and `inventory-<environment>-web` tags. For example, `journalctl CONTAINER_TAG=inventory-staging-api --since "1 hour ago"` reads staging API logs.
+
+`/api/health` is a lightweight liveness probe. `/api/health/ready` checks PostgreSQL and Keycloak with a five-second timeout and exposes only health status. Per-instance API limits allow 300 reads and 60 writes per minute per authenticated subject; anonymous requests share a 300-per-minute budget and readiness allows 30 probes per minute. Rejections return HTTP 429 and `Retry-After`. These limits do not replace Keycloak login protection or an edge firewall.
+
+The CI workflow has manually selected operational actions: `inspect`, `install`, `backup`, `restore-drill`, `monitor`, `alert-check` and `status`. They use the existing SSH credentials without exporting them. Installation requires an explicitly configured `INVENTORY_BACKUP_PASSPHRASE` Actions secret. Keep a separate recovery copy of that passphrase; losing it makes encrypted archives unusable.
+
+The root-owned operations script encrypts PostgreSQL custom-format dumps for each configured application database and running Keycloak database. Local archives are retained for 14 days. A restore drill checks archive hashes, decrypts into a temporary private directory and restores into an isolated, disposable PostgreSQL container with no network or published ports. It never restores over a live database. A successful backup alone is not proof of recoverability; inspect the recorded restore result.
+
+After installation, a daily backup timer runs at 02:30 server time. A monitoring timer is enabled only when an alert recipient is configured. It checks public service endpoints, backup age and free disk, sending failure/recovery emails through the existing SMTP configuration. This host-local monitor cannot report a complete host outage; independent external monitoring and an off-host backup destination must also be configured before declaring production readiness.
+
+Secret scanning covers the complete Git history locally and in the dedicated GitHub workflow. A clean scanner result is not a guarantee that no credential was ever exposed; known exposed credentials must still be rotated.
+
 ## Validation
 
 ```sh
