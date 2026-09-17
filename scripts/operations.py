@@ -90,6 +90,13 @@ def inspect():
     result["containers"] = [json.loads(line) for line in run(
         ["docker", "ps", "--format", '{"name":"{{.Names}}","status":"{{.Status}}","image":"{{.Image}}"}']).decode().splitlines()]
     result["disk"] = {"freeBytes": shutil.disk_usage("/var").free}
+    result["loadAverage"] = os.getloadavg()
+    memory = dict(line.split(":", 1) for line in pathlib.Path("/proc/meminfo").read_text().splitlines())
+    result["memoryKiB"] = {key: int(memory[key].split()[0]) for key in
+                           ("MemTotal", "MemAvailable", "SwapTotal", "SwapFree")}
+    result["containerResources"] = [json.loads(line) for line in run(
+        ["docker", "stats", "--no-stream", "--format",
+         '{"name":"{{.Name}}","cpu":"{{.CPUPerc}}","memory":"{{.MemUsage}}","pids":"{{.PIDs}}"}']).decode().splitlines()]
     result["operationsInstalled"] = (CONFIG / "config.json").exists()
     print(json.dumps(result, indent=2))
 
