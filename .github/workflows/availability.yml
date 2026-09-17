@@ -1,0 +1,62 @@
+name: External availability
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: inventory-external-monitor
+  cancel-in-progress: false
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe public services and maintain owner alert
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          GH_OWNER: ${{ github.repository_owner }}
+          STAGING_URL: ${{ vars.STAGING_HEALTH_URL }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_HEALTH_URL }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          failures = []
+          for label, url in [("staging", os.environ["STAGING_URL"]), ("production", os.environ["PRODUCTION_URL"])]:
+              if not url.startswith("https://"):
+                  failures.append(label + ": endpoint not configured")
+                  continue
+              for attempt in range(3):
+                  try:
+                      with urllib.request.urlopen(url, timeout=15) as response:
+                          if response.status != 200:
+                              raise RuntimeError()
+                      break
+                  except Exception:
+                      if attempt == 2:
+                          failures.append(label + ": public health endpoint unavailable")
+                      else:
+                          time.sleep(5)
+          def github(path, method="GET", data=None):
+              req = urllib.request.Request("https://api.github.com/repos/" + os.environ["GH_REPOSITORY"] + path,
+                  method=method, data=None if data is None else json.dumps(data).encode(),
+                  headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"], "Accept": "application/vnd.github+json",
+                           "Content-Type": "application/json", "X-GitHub-Api-Version": "2022-11-28"})
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  return json.load(response)
+          title = "Operational alert: public service unavailable"
+          issues = github("/issues?state=open&creator=github-actions%5Bbot%5D&per_page=100")
+          existing = next((i for i in issues if i["title"] == title and not i.get("pull_request")), None)
+          if failures and existing is None:
+              github("/issues", "POST", {"title": title, "body": "\n".join(failures) + "\n\nDetected by the external hourly availability check. Inspect the Actions run and server health.",
+                                       "assignees": [os.environ["GH_OWNER"]]})
+          elif not failures and existing:
+              github("/issues/" + str(existing["number"]) + "/comments", "POST", {"body": "Both public health endpoints are responding again. The external probe has recovered."})
+              github("/issues/" + str(existing["number"]), "PATCH", {"state": "closed"})
+          print(json.dumps({"healthy": not failures, "failures": failures}))
+          if failures:
+              raise SystemExit(1)
+          PY
