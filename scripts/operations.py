@@ -177,12 +177,31 @@ def restore_drill():
         if exists.returncode == 0 and exists.stdout.strip() == b"true":
             run(["docker", "rm", "-f", name])
 
+def smtp_settings():
+    source = env_file(pathlib.Path("/opt/inventory-identity/staging/.env.identity"))
+    if source.get("SMTP_USERNAME") and source.get("SMTP_PASSWORD"):
+        return source
+    # SMTP was configured in Keycloak rather than the compose environment.
+    # Read it locally as root; never send credentials or recipient details to the CI runner.
+    container = identity_container("staging")
+    if not container:
+        raise RuntimeError("Staging identity database is unavailable")
+    query = "SELECT json_object_agg(s.name,s.value) FROM realm_smtp_config s JOIN realm r ON r.id=s.realm_id WHERE r.name='inventory-staging'"
+    raw = run(["docker", "exec", container, "psql", "-U", "keycloak", "-d", "keycloak", "-At", "-c", query])
+    values = json.loads(raw) or {}
+    mapping = {"from": "FROM", "host": "HOST", "port": "PORT", "user": "USERNAME",
+               "password": "PASSWORD", "starttls": "STARTTLS", "ssl": "SSL"}
+    result = {"SMTP_" + target: values[key] for key, target in mapping.items() if key in values}
+    if not result.get("SMTP_USERNAME") or not result.get("SMTP_PASSWORD"):
+        raise RuntimeError("SMTP credentials are not configured")
+    return result
+
 def notify(subject, message):
     config = settings()
     recipient = config.get("alertRecipient")
     if not recipient:
         raise RuntimeError("Alert recipient is not configured")
-    smtp = env_file(pathlib.Path(config["smtpEnvFile"]))
+    smtp = smtp_settings()
     mail = EmailMessage()
     mail["Subject"] = "[Inventory] " + subject
     mail["From"] = smtp["SMTP_FROM"]
@@ -249,7 +268,7 @@ def install(recipient):
     config.setdefault("monitorStages", ["staging"])
     if recipient:
         if recipient == "self":
-            recipient = env_file(pathlib.Path("/opt/inventory-identity/staging/.env.identity"))["SMTP_USERNAME"]
+            recipient = smtp_settings()["SMTP_USERNAME"]
         config.update(alertRecipient=recipient, smtpEnvFile="/opt/inventory-identity/staging/.env.identity")
     save(CONFIG / "config.json", config)
     destination = pathlib.Path("/opt/inventory-ops/operations.py")
