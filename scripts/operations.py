@@ -100,6 +100,14 @@ def inspect():
     result["operationsInstalled"] = (CONFIG / "config.json").exists()
     print(json.dumps(result, indent=2))
 
+def restart_staging_identity():
+    ids = run(["docker", "ps", "-q", "--filter", "label=com.docker.compose.project=inventory-identity-staging",
+               "--filter", "label=com.docker.compose.service=keycloak"]).decode().split()
+    if len(ids) != 1:
+        raise RuntimeError("Expected one running staging identity service")
+    run(["docker", "restart", "--time", "30", ids[0]])
+    print(json.dumps({"stagingIdentity": "restarted", "readinessVerified": False}))
+
 def backup():
     if not (CONFIG / "backup-passphrase").exists():
         raise RuntimeError("Backup encryption passphrase is not configured")
@@ -296,7 +304,7 @@ def install(recipient):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["inspect", "install", "backup", "restore-drill", "monitor", "alert-check", "status"])
+    parser.add_argument("action", choices=["inspect", "install", "backup", "restore-drill", "monitor", "alert-check", "status", "restart-staging-identity"])
     parser.add_argument("--recipient", default="")
     args = parser.parse_args()
     if os.geteuid() != 0:
@@ -305,6 +313,7 @@ def main():
     with (STATE / "operations.lock").open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         if args.action == "inspect": inspect()
+        elif args.action == "restart-staging-identity": restart_staging_identity()
         elif args.action == "install": install(args.recipient)
         elif args.action == "backup": backup()
         elif args.action == "restore-drill": restore_drill()

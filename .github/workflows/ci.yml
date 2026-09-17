@@ -17,7 +17,7 @@ on:
         description: Manual operational task (validate runs normal build checks)
         type: choice
         default: validate
-        options: [validate, inspect, install, backup, restore-drill, monitor, alert-check, status]
+        options: [validate, inspect, install, backup, restore-drill, monitor, alert-check, status, restart-staging-identity]
       alert_recipient:
         description: Alert email recipient (install only)
         type: string
@@ -585,7 +585,7 @@ jobs:
           BACKUP_PASSPHRASE: ${{ secrets.INVENTORY_BACKUP_PASSPHRASE }}
         run: |
           set -Eeuo pipefail
-          case "$OPERATION" in inspect|install|backup|restore-drill|monitor|alert-check|status) ;; *) exit 1;; esac
+          case "$OPERATION" in inspect|install|backup|restore-drill|monitor|alert-check|status|restart-staging-identity) ;; *) exit 1;; esac
           remote="/tmp/inventory-operations-${GITHUB_RUN_ID}.py"
           recipient64="$(printf '%s' "$ALERT_RECIPIENT" | base64 -w0)"
           trap 'ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=10 "$SERVER_USER@$SERVER_HOST" "rm -f $remote" || true' EXIT
