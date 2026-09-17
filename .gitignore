@@ -92,3 +92,4 @@ compose.override.yml
 !/scripts/deploy-production.sh
 !/scripts/deploy-staging.sh
 !/scripts/rollback-production.sh
+!/scripts/operations.py
