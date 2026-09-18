@@ -1,7 +1,10 @@
+"use client";
 import { PackageOpen, RefreshCw, CircleAlert } from "lucide-react";
 import { Button } from "./button";
-import { messages as m } from "@/lib/i18n";
-export function LoadingState({ label = m.common.loading }: { label?: string }) {
+import { useI18n } from "@/lib/i18n/provider";
+export function LoadingState({ label }: { label?: string }) {
+  const { m } = useI18n();
+  label ??= m.common.loading;
   return (
     <div role="status" aria-label={label} className="panel overflow-hidden">
       <span className="sr-only">{label}</span>
@@ -55,6 +58,8 @@ export function ErrorState({
   message: string;
   onRetry?: () => void;
 }) {
+  const { m } = useI18n();
+
   return (
     <div
       role="alert"

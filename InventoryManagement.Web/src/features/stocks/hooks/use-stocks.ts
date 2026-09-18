@@ -1,6 +1,7 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getStockOverview,
   getWarehouseStock,
   getStockHistory,
   increaseStock,
@@ -12,6 +13,8 @@ export const useWarehouseStock = (id: string, enabled = true) =>
     queryKey: stockKeys.warehouse(id),
     queryFn: ({ signal }) => getWarehouseStock(id, signal),
     enabled: enabled && !!id,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 export const useStockHistory = (id: string, page: number) =>
   useQuery({
@@ -23,9 +26,9 @@ export function useIncreaseStock() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: increaseStock,
-    onSettled: (_, __, request) =>
+    onSettled: () =>
       client.invalidateQueries({
-        queryKey: stockKeys.warehouse(request.warehouseId),
+        queryKey: stockKeys.all,
       }),
   });
 }
@@ -45,3 +48,12 @@ export function useTransferStock() {
     },
   });
 }
+
+export const useStockOverview = (enabled = true) =>
+  useQuery({
+    queryKey: [...stockKeys.all, "overview"],
+    queryFn: ({ signal }) => getStockOverview(signal),
+    enabled,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
+  });

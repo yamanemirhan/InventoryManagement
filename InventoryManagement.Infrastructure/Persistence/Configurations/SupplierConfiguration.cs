@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -21,7 +21,7 @@ public class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
             .HasMaxLength(320)
             .IsRequired();
 
-        builder.HasIndex(x => x.Email)
+        builder.HasIndex(x => new { x.CompanyId, x.Email })
             .IsUnique();
     }
 }

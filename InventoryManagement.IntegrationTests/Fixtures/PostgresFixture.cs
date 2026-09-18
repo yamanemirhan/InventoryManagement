@@ -1,11 +1,13 @@
 ﻿
+using InventoryManagement.Application.Common.Interfaces;
+using InventoryManagement.Domain.Entities;
 using InventoryManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
 namespace InventoryManagement.IntegrationTests.Fixtures;
 
-public sealed class PostgresFixture : IAsyncLifetime
+public sealed class PostgresFixture : IAsyncLifetime, ICompanyContext
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithDatabase("inventory_test")
@@ -13,9 +15,11 @@ public sealed class PostgresFixture : IAsyncLifetime
         .WithPassword("postgres")
         .Build();
 
+    public Guid CompanyId { get; private set; }
+
     public string ConnectionString => _container.GetConnectionString();
 
-    // before each test, we will start the container and apply migrations to ensure a clean state
+    // Each test class gets its own database and company shared by its contexts.
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
@@ -26,9 +30,14 @@ public sealed class PostgresFixture : IAsyncLifetime
         await using var dbContext = new AppDbContext(options);
 
         await dbContext.Database.MigrateAsync();
+
+        var company = new Company { Name = "Integration test company" };
+        dbContext.Companies.Add(company);
+        await dbContext.SaveChangesAsync();
+        CompanyId = company.Id;
     }
 
-    // after each test, we will stop the container to clean up resources
+    // Stop and remove the class database when its tests finish.
     public async Task DisposeAsync()
     {
         await _container.DisposeAsync();

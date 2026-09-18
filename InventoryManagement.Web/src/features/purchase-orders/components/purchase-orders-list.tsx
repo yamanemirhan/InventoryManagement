@@ -5,9 +5,11 @@ import { usePurchaseOrders } from "../hooks/use-purchase-orders";
 import { OrderStatus } from "./order-status";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Pagination } from "@/components/ui/pagination";
-import { messages as m, formatAmount, formatDate } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { getErrorMessage } from "@/lib/utils";
 export function PurchaseOrdersList() {
+  const { m, formatAmount, formatDate } = useI18n();
+
   const [page, setPage] = useState(1);
   const query = usePurchaseOrders(page);
   if (query.isPending) return <LoadingState />;

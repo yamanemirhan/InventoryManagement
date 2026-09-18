@@ -1,4 +1,4 @@
-﻿
+
 using FluentValidation;
 using InventoryManagement.Application.Common.Behaviors;
 using MediatR;
@@ -16,6 +16,8 @@ public static class DependencyInjection
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
 
         services.AddValidatorsFromAssembly(assembly);
+        services.AddScoped<InventoryManagement.Application.Products.Import.ProductImportValidation>();
+        services.AddScoped<InventoryManagement.Application.Companies.Common.CompanyAccess>();
 
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 

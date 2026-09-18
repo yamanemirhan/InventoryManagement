@@ -3,13 +3,18 @@ import { z } from "zod";
 import { PageHeader } from "@/components/ui/page-header";
 import { LinkButton } from "@/components/ui/link-button";
 import { WarehouseStockViewer } from "@/features/stocks/components/warehouse-stock-viewer";
-import { messages as m } from "@/lib/i18n";
-export const metadata = { title: m.stocks.title };
+import { getI18n } from "@/lib/i18n/server";
+export async function generateMetadata() {
+  const { m } = await getI18n();
+  return { title: m.stocks.title };
+}
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { m } = await getI18n();
+
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   return (

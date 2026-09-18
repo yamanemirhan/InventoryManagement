@@ -1,4 +1,4 @@
-export type PurchaseOrderStatus = 1 | 2 | 3 | 4;
+export type PurchaseOrderStatus = 1 | 2 | 3 | 4 | 5;
 export type PurchaseOrderItemInput = {
   productId: string;
   quantity: number;
@@ -24,9 +24,12 @@ export type PurchaseOrderItemDto = PurchaseOrderItemInput & {
   productName: string;
   sku: string;
   totalPrice: number;
+  receivedQuantity: number;
+  returnedQuantity: number;
 };
 export type PurchaseOrderDto = Omit<PurchaseOrderListItemDto, "itemCount"> & {
   items: PurchaseOrderItemDto[];
+  version: number;
 };
 export type OrderAction = "order" | "receive" | "cancel";
 export type PurchaseOrderPage = {

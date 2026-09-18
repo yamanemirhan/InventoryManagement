@@ -1,4 +1,6 @@
-﻿
+using InventoryManagement.Api.Common.Authentication;
+using Microsoft.AspNetCore.Authorization;
+
 using InventoryManagement.Application.Products.Commands.CreateProduct;
 using InventoryManagement.Application.Products.Queries.GetProductById;
 using InventoryManagement.Application.Products.Queries.GetProducts;
@@ -8,10 +10,20 @@ using Microsoft.AspNetCore.Mvc;
 namespace InventoryManagement.Api.Controllers;
 
 [ApiController]
+[Authorize(Policy = InventoryPolicies.Read)]
 [Route("api/products")]
 public class ProductsController(ISender sender) : Controller
 {
+    [HttpPost("import/preview")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    [RequestSizeLimit(524288)]
+    public async Task<IActionResult> Preview(InventoryManagement.Application.Products.Queries.PreviewProductImport.PreviewProductImportQuery query, CancellationToken ct) => Ok(await sender.Send(query, ct));
+    [HttpPost("import")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    [RequestSizeLimit(524288)]
+    public async Task<IActionResult> Import(InventoryManagement.Application.Products.Commands.ImportProducts.ImportProductsCommand command, CancellationToken ct) => Ok(await sender.Send(command, ct));
     [HttpPost]
+    [Authorize(Policy = InventoryPolicies.Manage)]
     public async Task<ActionResult<Guid>> Create(CreateProductCommand command, CancellationToken cancellationToken)
     {
         var id = await sender.Send(command, cancellationToken);
@@ -36,5 +48,13 @@ public class ProductsController(ISender sender) : Controller
         var products = await sender.Send(new GetProductsQuery(), cancellationToken);
 
         return Ok(products);
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    public async Task<IActionResult> Update(Guid id, InventoryManagement.Application.Products.Commands.UpdateProduct.UpdateProductCommand command, CancellationToken ct)
+    {
+        await sender.Send(command with { Id = id }, ct);
+        return NoContent();
     }
 }

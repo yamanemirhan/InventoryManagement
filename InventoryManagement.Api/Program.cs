@@ -1,8 +1,14 @@
 using InventoryManagement.Api.Common.Exceptions;
 using InventoryManagement.Application;
 using InventoryManagement.Infrastructure;
+using InventoryManagement.Api.Common.Authentication;
+using InventoryManagement.Api.Common.Operations;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
+builder.Services.AddOperations();
 
 // Add services to the container.
 
@@ -11,6 +17,14 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<InventoryManagement.Api.Realtime.WorkspaceConnections>();
+builder.Services.AddHostedService<InventoryManagement.Api.Realtime.WorkspaceEventDispatcher>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<InventoryManagement.Application.Common.Interfaces.ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<CompanyContext>();
+builder.Services.AddScoped<InventoryManagement.Application.Common.Interfaces.ICompanyContext>(sp => sp.GetRequiredService<CompanyContext>());
+builder.Services.AddInventoryAuthentication(builder.Configuration, builder.Environment);
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
@@ -33,6 +47,8 @@ builder.Services.AddApplication();
 
 
 
+builder.Services.AddHostedService<InvitationEmailDispatcher>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -42,14 +58,25 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<RequestDiagnosticsMiddleware>();
 app.UseExceptionHandler();
 
 app.UseCors("Frontend");
+app.UseRequestLocalization(options => options.SetDefaultCulture("en")
+    .AddSupportedCultures("en", "tr").AddSupportedUICultures("en", "tr"));
 
+app.UseAuthentication();
+app.UseRateLimiter();
+app.UseMiddleware<CompanyContextMiddleware>();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health");
-app.MapHealthChecks("/api/health");
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/api/health", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/api/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }).AllowAnonymous();
 app.MapControllers();
+app.MapHub<InventoryManagement.Api.Realtime.WorkspaceHub>("/api/realtime/workspace", options =>
+{
+    options.CloseOnAuthenticationExpiration = true;
+});
 
 app.Run();

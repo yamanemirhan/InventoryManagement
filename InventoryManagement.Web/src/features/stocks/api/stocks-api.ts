@@ -32,3 +32,6 @@ export const increaseStock = (body: IncreaseStockRequest) =>
   apiClient<void>("/api/stocks/increase", { method: "POST", body });
 export const transferStock = (body: TransferStockRequest) =>
   apiClient<void>("/api/stocks/transfer", { method: "POST", body });
+
+export const getStockOverview = (signal?: AbortSignal) =>
+  apiClient<WarehouseStockItemDto[]>("/api/stocks", { signal });

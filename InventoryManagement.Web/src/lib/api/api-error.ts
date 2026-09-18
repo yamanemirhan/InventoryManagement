@@ -5,6 +5,7 @@ export class ApiError extends Error {
     public readonly title: string,
     public readonly detail?: string,
     public readonly errors?: Record<string, string[]>,
+    public readonly code?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -12,7 +13,9 @@ export class ApiError extends Error {
 
   get isConcurrencyConflict() {
     return (
-      this.status === 409 && this.title.toLowerCase().includes("concurrency")
+      this.status === 409 &&
+      (this.code === "concurrency_conflict" ||
+        this.title.toLowerCase().includes("concurrency"))
     );
   }
 }

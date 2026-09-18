@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -22,17 +22,17 @@ public class PurchaseOrderConfiguration : IEntityTypeConfiguration<PurchaseOrder
 
         builder.HasOne<Supplier>()
             .WithMany()
-            .HasForeignKey(x => x.SupplierId)
+            .HasForeignKey(x => new { x.CompanyId, x.SupplierId }).HasPrincipalKey(x => new { x.CompanyId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Warehouse>()
             .WithMany()
-            .HasForeignKey(x => x.WarehouseId)
+            .HasForeignKey(x => new { x.CompanyId, x.WarehouseId }).HasPrincipalKey(x => new { x.CompanyId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(x => x.Items)
             .WithOne()
-            .HasForeignKey("PurchaseOrderId")
+            .HasForeignKey("CompanyId", "PurchaseOrderId").HasPrincipalKey(x => new { x.CompanyId, x.Id })
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(x => x.Items)

@@ -1,16 +1,29 @@
+import { getAccessToken, expireSession } from "@/features/auth/lib/keycloak";
 import { ApiError } from "./api-error";
 import { getValidationErrors, isProblemDetails } from "./problem-details";
-import { messages as m } from "@/lib/i18n";
+import { getClientI18n } from "@/lib/i18n";
 type ApiClientOptions = Omit<RequestInit, "body"> & { body?: unknown };
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
 export async function apiClient<T>(
   path: string,
   options: ApiClientOptions = {},
 ): Promise<T> {
+  const { m, locale } = getClientI18n();
+
   if (apiBaseUrl === undefined)
     throw new ApiError(m.errors.configuration, 0, "Configuration error");
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
+  headers.set("Accept-Language", locale);
+  const companyId =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("inventory-company")
+      : null;
+  if (companyId) headers.set("X-Company-Id", companyId);
+  const token = await getAccessToken();
+  if (!token)
+    throw new ApiError(m.auth.sessionExpired, 401, m.auth.sessionExpired);
+  headers.set("Authorization", `Bearer ${token}`);
   let body: BodyInit | undefined;
   if (options.body !== undefined) {
     headers.set("Content-Type", "application/json");
@@ -41,6 +54,12 @@ export async function apiClient<T>(
       throw new ApiError(m.errors.request, response.status, "Invalid response");
     }
   }
+  if (response.status === 401) {
+    expireSession();
+    throw new ApiError(m.auth.sessionExpired, 401, m.auth.sessionExpired);
+  }
+  if (response.status === 403)
+    throw new ApiError(m.auth.forbiddenDescription, 403, m.auth.forbidden);
   const contentType = response.headers.get("content-type") ?? "";
   const payload: unknown = contentType.includes("json")
     ? await response.json().catch(() => undefined)
@@ -56,6 +75,7 @@ export async function apiClient<T>(
       title,
       detail,
       getValidationErrors(payload),
+      typeof payload.code === "string" ? payload.code : undefined,
     );
   }
   throw new ApiError(

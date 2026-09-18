@@ -1,9 +1,14 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { LinkButton } from "@/components/ui/link-button";
 import { CreateWarehouseForm } from "@/features/warehouses/components/create-warehouse-form";
-import { messages as m } from "@/lib/i18n";
-export const metadata = { title: m.warehouses.createTitle };
-export default function Page() {
+import { getI18n } from "@/lib/i18n/server";
+export async function generateMetadata() {
+  const { m } = await getI18n();
+  return { title: m.warehouses.createTitle };
+}
+export default async function Page() {
+  const { m } = await getI18n();
+
   return (
     <>
       <PageHeader

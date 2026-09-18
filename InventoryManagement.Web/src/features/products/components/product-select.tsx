@@ -1,11 +1,12 @@
 "use client";
 import { forwardRef, type SelectHTMLAttributes } from "react";
 import { useProducts } from "../hooks/use-products";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 export const ProductSelect = forwardRef<
   HTMLSelectElement,
-  SelectHTMLAttributes<HTMLSelectElement>
->(function ProductSelect(props, ref) {
+  SelectHTMLAttributes<HTMLSelectElement> & { emptyLabel?: string }
+>(function ProductSelect({ emptyLabel, ...props }, ref) {
+  const { m } = useI18n();
   const query = useProducts();
   return (
     <select
@@ -19,7 +20,7 @@ export const ProductSelect = forwardRef<
           ? m.common.loadingOptions
           : query.isError
             ? m.common.unavailable
-            : m.common.selectProduct}
+            : (emptyLabel ?? m.common.selectProduct)}
       </option>
       {query.data?.map((p) => (
         <option key={p.id} value={p.id}>

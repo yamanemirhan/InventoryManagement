@@ -30,11 +30,11 @@ export function useOrderAction() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: changeOrderStatus,
-    onSettled: async (_, __, variables) => {
+    onSettled: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: purchaseOrderKeys.all }),
         client.invalidateQueries({
-          queryKey: stockKeys.warehouse(variables.warehouseId),
+          queryKey: stockKeys.all,
         }),
       ]);
     },

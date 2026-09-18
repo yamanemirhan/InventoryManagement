@@ -22,10 +22,225 @@ namespace InventoryManagement.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.ActivityEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ActorSubjectId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasFilter("\"PublishedAtUtc\" IS NULL");
+
+                    b.HasIndex("CompanyId", "CreatedAtUtc", "Id");
+
+                    b.ToTable("ActivityEntries");
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.ApplicationUser", b =>
+                {
+                    b.Property<string>("SubjectId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("SubjectId");
+
+                    b.ToTable("ApplicationUsers");
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.Company", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Companies");
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.CompanyInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcceptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<int>("EmailAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EmailSentAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("NextEmailAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Email")
+                        .IsUnique()
+                        .HasFilter("\"AcceptedAtUtc\" IS NULL AND \"RevokedAtUtc\" IS NULL");
+
+                    b.ToTable("CompanyInvitations");
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.CompanyMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("SubjectId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("CompanyId", "SubjectId")
+                        .IsUnique();
+
+                    b.ToTable("CompanyMembers");
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.KnowledgeDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(30000)
+                        .HasColumnType("character varying(30000)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("CompanyId", "Id");
+
+                    b.HasIndex("CompanyId", "UpdatedAtUtc", "Id");
+
+                    b.ToTable("KnowledgeDocuments");
+                });
+
             modelBuilder.Entity("InventoryManagement.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -43,7 +258,7 @@ namespace InventoryManagement.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SKU")
+                    b.HasIndex("CompanyId", "SKU")
                         .IsUnique();
 
                     b.ToTable("Products", (string)null);
@@ -55,8 +270,14 @@ namespace InventoryManagement.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FulfillmentRevision")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -75,9 +296,9 @@ namespace InventoryManagement.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SupplierId");
+                    b.HasIndex("CompanyId", "SupplierId");
 
-                    b.HasIndex("WarehouseId");
+                    b.HasIndex("CompanyId", "WarehouseId");
 
                     b.ToTable("PurchaseOrders", (string)null);
                 });
@@ -86,6 +307,9 @@ namespace InventoryManagement.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ProductId")
@@ -97,15 +321,23 @@ namespace InventoryManagement.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<int>("ReceivedQuantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ReturnedQuantity")
+                        .HasColumnType("integer");
+
                     b.Property<decimal>("UnitPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasAlternateKey("CompanyId", "Id");
 
-                    b.HasIndex("PurchaseOrderId");
+                    b.HasIndex("CompanyId", "ProductId");
+
+                    b.HasIndex("CompanyId", "PurchaseOrderId");
 
                     b.ToTable("PurchaseOrderItems", (string)null);
                 });
@@ -115,6 +347,15 @@ namespace InventoryManagement.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CountRevision")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinimumQuantity")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
@@ -133,12 +374,61 @@ namespace InventoryManagement.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WarehouseId");
+                    b.HasAlternateKey("CompanyId", "Id");
+
+                    b.HasIndex("CompanyId", "ProductId");
+
+                    b.HasIndex("CompanyId", "WarehouseId");
 
                     b.HasIndex("ProductId", "WarehouseId")
                         .IsUnique();
 
                     b.ToTable("Stocks", (string)null);
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.StockCount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorSubjectId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CountedQuantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PreviousQuantity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("CompanyId", "Id");
+
+                    b.HasIndex("CompanyId", "ProductId");
+
+                    b.HasIndex("CompanyId", "WarehouseId");
+
+                    b.ToTable("StockCounts");
                 });
 
             modelBuilder.Entity("InventoryManagement.Domain.Entities.StockMovement", b =>
@@ -147,17 +437,30 @@ namespace InventoryManagement.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("PurchaseOrderId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<Guid?>("RelatedWarehouseId")
                         .HasColumnType("uuid");
+
+                    b.Property<int?>("SignedDelta")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -167,11 +470,15 @@ namespace InventoryManagement.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasAlternateKey("CompanyId", "Id");
 
-                    b.HasIndex("RelatedWarehouseId");
+                    b.HasIndex("CompanyId", "ProductId");
 
-                    b.HasIndex("WarehouseId");
+                    b.HasIndex("CompanyId", "PurchaseOrderId");
+
+                    b.HasIndex("CompanyId", "RelatedWarehouseId");
+
+                    b.HasIndex("CompanyId", "WarehouseId");
 
                     b.ToTable("StockMovements", (string)null);
                 });
@@ -180,6 +487,9 @@ namespace InventoryManagement.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Email")
@@ -194,7 +504,7 @@ namespace InventoryManagement.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
+                    b.HasIndex("CompanyId", "Email")
                         .IsUnique();
 
                     b.ToTable("Suppliers", (string)null);
@@ -204,6 +514,9 @@ namespace InventoryManagement.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Location")
@@ -221,66 +534,197 @@ namespace InventoryManagement.Infrastructure.Migrations
                     b.ToTable("Warehouses", (string)null);
                 });
 
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.ActivityEntry", b =>
+                {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.CompanyInvitation", b =>
+                {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.CompanyMember", b =>
+                {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InventoryManagement.Domain.Entities.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.KnowledgeDocument", b =>
+                {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.Product", b =>
+                {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("InventoryManagement.Domain.Entities.PurchaseOrder", b =>
                 {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("InventoryManagement.Domain.Entities.Supplier", null)
                         .WithMany()
-                        .HasForeignKey("SupplierId")
+                        .HasForeignKey("CompanyId", "SupplierId")
+                        .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("InventoryManagement.Domain.Entities.Warehouse", null)
                         .WithMany()
-                        .HasForeignKey("WarehouseId")
+                        .HasForeignKey("CompanyId", "WarehouseId")
+                        .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
             modelBuilder.Entity("InventoryManagement.Domain.Entities.PurchaseOrderItem", b =>
                 {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("InventoryManagement.Domain.Entities.Product", null)
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("CompanyId", "ProductId")
+                        .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("InventoryManagement.Domain.Entities.PurchaseOrder", null)
                         .WithMany("Items")
-                        .HasForeignKey("PurchaseOrderId")
+                        .HasForeignKey("CompanyId", "PurchaseOrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("InventoryManagement.Domain.Entities.Stock", b =>
                 {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("InventoryManagement.Domain.Entities.Product", null)
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("CompanyId", "ProductId")
+                        .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("InventoryManagement.Domain.Entities.Warehouse", null)
                         .WithMany()
-                        .HasForeignKey("WarehouseId")
+                        .HasForeignKey("CompanyId", "WarehouseId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.StockCount", b =>
+                {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InventoryManagement.Domain.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ProductId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InventoryManagement.Domain.Entities.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "WarehouseId")
+                        .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
             modelBuilder.Entity("InventoryManagement.Domain.Entities.StockMovement", b =>
                 {
-                    b.HasOne("InventoryManagement.Domain.Entities.Product", null)
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("InventoryManagement.Domain.Entities.Warehouse", null)
+                    b.HasOne("InventoryManagement.Domain.Entities.Product", null)
                         .WithMany()
-                        .HasForeignKey("RelatedWarehouseId")
+                        .HasForeignKey("CompanyId", "ProductId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InventoryManagement.Domain.Entities.PurchaseOrder", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "PurchaseOrderId")
+                        .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("InventoryManagement.Domain.Entities.Warehouse", null)
                         .WithMany()
-                        .HasForeignKey("WarehouseId")
+                        .HasForeignKey("CompanyId", "RelatedWarehouseId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("InventoryManagement.Domain.Entities.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "WarehouseId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.Supplier", b =>
+                {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InventoryManagement.Domain.Entities.Warehouse", b =>
+                {
+                    b.HasOne("InventoryManagement.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

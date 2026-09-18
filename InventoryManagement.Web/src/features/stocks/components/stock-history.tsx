@@ -5,9 +5,11 @@ import { useStockHistory } from "../hooks/use-stocks";
 import { useWarehouses } from "@/features/warehouses/hooks/use-warehouses";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Pagination } from "@/components/ui/pagination";
-import { messages as m, formatNumber, formatDate } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { getErrorMessage } from "@/lib/utils";
 export function StockHistory({ id }: { id: string }) {
+  const { m, formatNumber, formatDate } = useI18n();
+
   const [page, setPage] = useState(1);
   const query = useStockHistory(id, page);
   const warehouses = useWarehouses();

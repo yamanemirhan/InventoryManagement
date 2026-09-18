@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -21,7 +21,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.HasIndex(x => x.SKU)
+        builder.HasIndex(x => new { x.CompanyId, x.SKU })
             .IsUnique();
 
         builder.Property(x => x.IsDeleted)

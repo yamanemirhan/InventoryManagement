@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { Button } from "./button";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 export function ConfirmDialog({
   description,
   pending,
@@ -13,6 +13,8 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  const { m } = useI18n();
+
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;

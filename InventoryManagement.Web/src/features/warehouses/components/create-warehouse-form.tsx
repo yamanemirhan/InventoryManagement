@@ -9,17 +9,19 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { applyApiFieldErrors } from "@/lib/forms/apply-api-errors";
 import { getErrorMessage } from "@/lib/utils";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { useCreateWarehouse } from "../hooks/use-warehouses";
 import {
   createWarehouseSchema,
   type CreateWarehouseFormValues,
 } from "../schemas/warehouse-schema";
 export function CreateWarehouseForm() {
+  const { m } = useI18n();
+
   const router = useRouter();
   const mutation = useCreateWarehouse();
   const form = useForm<CreateWarehouseFormValues>({
-    resolver: zodResolver(createWarehouseSchema),
+    resolver: zodResolver(createWarehouseSchema(m)),
     defaultValues: { name: "", location: "" },
   });
   const submit = form.handleSubmit(async (values) => {

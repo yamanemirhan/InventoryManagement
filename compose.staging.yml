@@ -2,12 +2,25 @@ name: inventory-management-staging
 
 services:
   api:
+    logging:
+      driver: journald
+      options:
+        tag: inventory-staging-api
     image: ${API_IMAGE_REPOSITORY:-inventory-management-api}:${IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: InventoryManagement.Api/Dockerfile
     restart: unless-stopped
     environment:
+      Authentication__Authority: ${KEYCLOAK_AUTHORITY:?Set KEYCLOAK_AUTHORITY}
+      Authentication__Audience: inventory-api
+      Mail__HostBase64: ${MAIL_HOST_BASE64:-}
+      Mail__PortBase64: ${MAIL_PORT_BASE64:-}
+      Mail__UsernameBase64: ${MAIL_USERNAME_BASE64:-}
+      Mail__PasswordBase64: ${MAIL_PASSWORD_BASE64:-}
+      Mail__FromBase64: ${MAIL_FROM_BASE64:-}
+      Mail__ImplicitTlsBase64: ${MAIL_IMPLICITTLS_BASE64:-}
+      Mail__AppOrigin: ${KEYCLOAK_URL}
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
     healthcheck:
@@ -38,6 +51,10 @@ services:
       - inventory_network
 
   frontend:
+    logging:
+      driver: journald
+      options:
+        tag: inventory-staging-web
     image: ${FRONTEND_IMAGE_REPOSITORY:-inventory-management-web}:${IMAGE_TAG:-local}
     build:
       context: .
@@ -45,6 +62,11 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: ""
     restart: unless-stopped
+    environment:
+      KEYCLOAK_URL: ${KEYCLOAK_URL:?Set KEYCLOAK_URL}
+      KEYCLOAK_REALM: inventory-staging
+      KEYCLOAK_CLIENT_ID: inventory-web
+      GOOGLE_LOGIN_ENABLED: ${GOOGLE_LOGIN_ENABLED:-false}
     depends_on:
       api:
         condition: service_healthy

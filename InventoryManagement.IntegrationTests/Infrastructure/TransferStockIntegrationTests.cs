@@ -1,4 +1,4 @@
-﻿
+
 using InventoryManagement.Application.Stocks.Commands.TransferStock;
 using InventoryManagement.Domain.Entities;
 using InventoryManagement.Domain.Enums;
@@ -19,7 +19,7 @@ public class TransferStockIntegrationTests(PostgresFixture fixture) : IClassFixt
             .UseNpgsql(fixture.ConnectionString)
             .Options;
 
-        await using var dbContext = new AppDbContext(options);
+        await using var dbContext = new AppDbContext(options, fixture);
 
         var product = new Product("Keyboard", $"KB-{Guid.NewGuid()}");
         var sourceWarehouse = new Warehouse("Source", "Istanbul");
@@ -75,7 +75,7 @@ public class TransferStockIntegrationTests(PostgresFixture fixture) : IClassFixt
         Guid sourceWarehouseId;
         Guid targetWarehouseId;
 
-        await using (var dbContext = new AppDbContext(options))
+        await using (var dbContext = new AppDbContext(options, fixture))
         {
             var product = new Product("Mouse", $"MOUSE-{Guid.NewGuid()}");
             var sourceWarehouse = new Warehouse("Source 2", "Istanbul");
@@ -105,7 +105,7 @@ public class TransferStockIntegrationTests(PostgresFixture fixture) : IClassFixt
                     CancellationToken.None));
         }
 
-        await using var verifyContext = new AppDbContext(options);
+        await using var verifyContext = new AppDbContext(options, fixture);
 
         var sourceStockFromDb = await verifyContext.Stocks.SingleAsync(
             x => x.ProductId == productId && x.WarehouseId == sourceWarehouseId);

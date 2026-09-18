@@ -1,4 +1,51 @@
 export const en = {
+  preferences: {
+    language: "Language",
+    appearance: "Appearance",
+    dark: "Dark",
+    light: "Light",
+    accent: "Accent color",
+    forest: "Forest",
+    indigo: "Indigo",
+  },
+  auth: {
+    title: "Welcome to Inventory OS",
+    description:
+      "Sign in to your workspace to manage inventory with confidence.",
+    login: "Sign in with email",
+    google: "Continue with Google",
+    register: "Create an account",
+    logout: "Sign out",
+    account: "Manage account",
+    checking: "Checking your session…",
+    error: "We couldn’t connect to the identity service.",
+    retry: "Retry connection",
+    forbidden: "You don’t have access to this page",
+    forbiddenDescription:
+      "Your account does not have the required permissions. Contact an administrator.",
+    sessionExpired: "Your session has expired. Please sign in again.",
+    noRole:
+      "Your account is ready, but an inventory role has not been assigned.",
+    admin: "Administrator",
+    user: "User",
+    googleUnavailable: "Google sign-in is not configured in this environment.",
+    secure: "Your account is securely managed by Keycloak.",
+    configuration: "Sign-in is not configured for this environment.",
+    back: "Back to workspace",
+  },
+  stockOverview: {
+    all: "All warehouses",
+    total: "Total units on hand",
+    products: "Products in stock",
+    locations: "Warehouse filter",
+    zero: "Out of stock",
+    refresh: "Refresh quantities",
+    description:
+      "Current quantities across all warehouses. Choose a location to see its stock.",
+    search: "Search products or SKUs",
+    noProducts: "No products found",
+    live: "Quantities reflect the latest saved stock movements.",
+  },
   counts: {
     item: { one: "{count} item", other: "{count} items" },
     record: { one: "{count} record", other: "{count} records" },

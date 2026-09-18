@@ -1,9 +1,9 @@
-﻿
+
 using InventoryManagement.Domain.Common;
 
 namespace InventoryManagement.Domain.Entities;
 
-public class Product : Entity
+public class Product : CompanyEntity
 {
     private Product() { } // Private constructor for EF Core
 
@@ -20,5 +20,10 @@ public class Product : Entity
     public void SoftDelete()
     {
         IsDeleted = true;
+    }
+    public void Update(string name, string sku)
+    {
+        Name = name.Trim();
+        SKU = sku.Trim();
     }
 }

@@ -1,11 +1,15 @@
 "use client";
+import { CatalogEditor } from "@/features/workspace/catalog-editor";
+import { AdminOnly } from "@/features/auth/components/access";
 import { useSupplier } from "../hooks/use-suppliers";
 import { ErrorState, LoadingState } from "@/components/ui/states";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { getErrorMessage } from "@/lib/utils";
 export function SupplierDetail({ id }: { id: string }) {
+  const { m } = useI18n();
+
   const query = useSupplier(id);
   if (query.isPending) return <LoadingState />;
   if (query.isError)
@@ -23,7 +27,19 @@ export function SupplierDetail({ id }: { id: string }) {
         {query.data.id}
       </p>
       <div className="mt-8">
-        <LinkButton href="/purchase-orders/new">{m.orders.new}</LinkButton>
+        <AdminOnly>
+          <LinkButton href="/purchase-orders/new">{m.orders.new}</LinkButton>
+        </AdminOnly>
+      </div>
+      <div className="mt-5">
+        <AdminOnly>
+          <CatalogEditor
+            kind="suppliers"
+            id={id}
+            name={query.data.name}
+            value={query.data.email}
+          />
+        </AdminOnly>
       </div>
     </Card>
   );

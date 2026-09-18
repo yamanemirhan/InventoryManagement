@@ -10,7 +10,7 @@ import { WarehouseSelect } from "@/features/warehouses/components/warehouse-sele
 import { ApiError } from "@/lib/api/api-error";
 import { applyApiFieldErrors } from "@/lib/forms/apply-api-errors";
 import { getErrorMessage } from "@/lib/utils";
-import { messages as m } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/provider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSelectedWarehouseId } from "@/store/slices/inventory-ui-slice";
 import { useTransferStock } from "../hooks/use-stocks";
@@ -19,12 +19,14 @@ import {
   type TransferStockFormValues,
 } from "../schemas/stock-schema";
 export function TransferStockForm() {
+  const { m } = useI18n();
+
   const selected =
     useAppSelector((s) => s.inventoryUi.selectedWarehouseId) ?? "";
   const dispatch = useAppDispatch();
   const mutation = useTransferStock();
   const form = useForm<TransferStockFormValues>({
-    resolver: zodResolver(transferStockSchema),
+    resolver: zodResolver(transferStockSchema(m)),
     defaultValues: {
       productId: "",
       sourceWarehouseId: selected,
