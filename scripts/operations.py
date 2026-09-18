@@ -98,6 +98,18 @@ def inspect():
         ["docker", "stats", "--no-stream", "--format",
          '{"name":"{{.Name}}","cpu":"{{.CPUPerc}}","memory":"{{.MemUsage}}","pids":"{{.PIDs}}"}']).decode().splitlines()]
     result["operationsInstalled"] = (CONFIG / "config.json").exists()
+    result["pressure"] = {name: pathlib.Path("/proc/pressure", name).read_text().strip()
+                          for name in ("cpu", "memory", "io") if pathlib.Path("/proc/pressure", name).exists()}
+    identity_ids = run(["docker", "ps", "-q", "--filter", "label=com.docker.compose.project=inventory-identity-staging",
+                        "--filter", "label=com.docker.compose.service=keycloak"]).decode().split()
+    if len(identity_ids) == 1:
+        import re
+        logs = subprocess.run(["docker", "logs", "--since", "20m", "--tail", "300", identity_ids[0]], capture_output=True, timeout=15)
+        lines = (logs.stdout + logs.stderr).decode(errors="replace")
+        # Only exception class names and known error categories, never messages or URLs.
+        result["identityExceptions"] = sorted(set(re.findall(r"\b[A-Za-z.]+(?:Exception|Error)\b", lines)))
+        result["identityErrors"] = {label: lines.lower().count(label) for label in
+                                   ("outofmemory", "failed to start", "connection refused", "timeout", "unable to acquire")}
     print(json.dumps(result, indent=2))
 
 def restart_staging_identity():
