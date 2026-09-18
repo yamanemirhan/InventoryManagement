@@ -14,6 +14,14 @@ namespace InventoryManagement.Api.Controllers;
 [Route("api/products")]
 public class ProductsController(ISender sender) : Controller
 {
+    [HttpPost("import/preview")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    [RequestSizeLimit(524288)]
+    public async Task<IActionResult> Preview(InventoryManagement.Application.Products.Queries.PreviewProductImport.PreviewProductImportQuery query, CancellationToken ct) => Ok(await sender.Send(query, ct));
+    [HttpPost("import")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    [RequestSizeLimit(524288)]
+    public async Task<IActionResult> Import(InventoryManagement.Application.Products.Commands.ImportProducts.ImportProductsCommand command, CancellationToken ct) => Ok(await sender.Send(command, ct));
     [HttpPost]
     [Authorize(Policy = InventoryPolicies.Manage)]
     public async Task<ActionResult<Guid>> Create(CreateProductCommand command, CancellationToken cancellationToken)

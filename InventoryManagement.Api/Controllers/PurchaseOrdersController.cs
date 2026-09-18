@@ -7,6 +7,7 @@ using InventoryManagement.Application.Common.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 namespace InventoryManagement.Api.Controllers;
+
 [ApiController]
 [Authorize(Policy = InventoryPolicies.Read)]
 [Route("api/purchase-orders")]
@@ -24,6 +25,10 @@ public sealed class PurchaseOrdersController(ISender sender) : ControllerBase
         Ok(await sender.Send(new GetPurchaseOrdersQuery(page, pageSize), ct));
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<PurchaseOrderDto>> GetById(Guid id, CancellationToken ct) => Ok(await sender.Send(new GetPurchaseOrderByIdQuery(id), ct));
+    [HttpPost("{id:guid}/fulfillment")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    public async Task<IActionResult> Fulfill(Guid id, InventoryManagement.Application.PurchaseOrders.Commands.RecordPurchaseFulfillment.RecordPurchaseFulfillmentCommand command, CancellationToken ct)
+    { await sender.Send(command with { Id = id }, ct); return NoContent(); }
     [HttpPost("{id:guid}/order")]
     [Authorize(Policy = InventoryPolicies.Manage)]
     public async Task<IActionResult> Order(Guid id, CancellationToken ct) { await sender.Send(new MarkPurchaseOrderAsOrderedCommand(id), ct); return NoContent(); }

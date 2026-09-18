@@ -14,12 +14,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
     public Guid CurrentCompanyId => companyContext?.CompanyId ?? Guid.Empty;
     public DbSet<KnowledgeDocument> KnowledgeDocuments => Set<KnowledgeDocument>();
     public DbSet<ActivityEntry> ActivityEntries => Set<ActivityEntry>();
+    public DbSet<CompanyInvitation> CompanyInvitations => Set<CompanyInvitation>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<CompanyMember> CompanyMembers => Set<CompanyMember>();
     public DbSet<ApplicationUser> ApplicationUsers => Set<ApplicationUser>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<Stock> Stocks => Set<Stock>();
+    public DbSet<StockCount> StockCounts => Set<StockCount>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
@@ -31,6 +33,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         modelBuilder.Entity<Company>().Property(x => x.Name).HasMaxLength(200);
+        modelBuilder.Entity<CompanyInvitation>().Property(x => x.Email).HasMaxLength(320);
+        modelBuilder.Entity<CompanyInvitation>().Property(x => x.Role).HasMaxLength(20);
+        modelBuilder.Entity<CompanyInvitation>().Property(x => x.Version).IsRowVersion();
+        modelBuilder.Entity<CompanyInvitation>().HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CompanyInvitation>().HasIndex(x => new { x.CompanyId, x.Email }).IsUnique().HasFilter("\"AcceptedAtUtc\" IS NULL AND \"RevokedAtUtc\" IS NULL");
         modelBuilder.Entity<ApplicationUser>().HasKey(x => x.SubjectId);
         modelBuilder.Entity<ApplicationUser>().Property(x => x.SubjectId).HasMaxLength(200);
         modelBuilder.Entity<ApplicationUser>().Property(x => x.Name).HasMaxLength(300);
@@ -46,6 +53,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
         ConfigureCompany<Warehouse>(modelBuilder);
         ConfigureCompany<Supplier>(modelBuilder);
         ConfigureCompany<Stock>(modelBuilder);
+        ConfigureCompany<StockCount>(modelBuilder);
+        modelBuilder.Entity<StockCount>().Property(x => x.Reason).HasMaxLength(500);
+        modelBuilder.Entity<StockCount>().Property(x => x.ActorSubjectId).HasMaxLength(200);
+        modelBuilder.Entity<StockCount>().HasOne<Product>().WithMany().HasForeignKey(x => new { x.CompanyId, x.ProductId }).HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<StockCount>().HasOne<Warehouse>().WithMany().HasForeignKey(x => new { x.CompanyId, x.WarehouseId }).HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<StockMovement>().Property(x => x.Reason).HasMaxLength(500);
+        modelBuilder.Entity<StockMovement>().HasOne<PurchaseOrder>().WithMany().HasForeignKey(x => new { x.CompanyId, x.PurchaseOrderId }).HasPrincipalKey(x => new { x.CompanyId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         ConfigureCompany<StockMovement>(modelBuilder);
         ConfigureCompany<PurchaseOrder>(modelBuilder);
         ConfigureCompany<PurchaseOrderItem>(modelBuilder);
@@ -79,13 +93,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
                 CompanyEntity entity => entity.CompanyId,
                 Company entity => entity.Id,
                 CompanyMember member => member.CompanyId,
+                CompanyInvitation invitation => invitation.CompanyId,
                 _ => Guid.Empty
             };
             if (companyId == Guid.Empty || entry.Entity is not Entity entityWithId) continue;
             ActivityEntries.Add(new ActivityEntry
             {
-                CompanyId = companyId, EntityType = entry.Metadata.ClrType.Name,
-                EntityId = entityWithId.Id, Action = entry.State.ToString(),
+                CompanyId = companyId,
+                EntityType = entry.Metadata.ClrType.Name,
+                EntityId = entityWithId.Id,
+                Action = entry.State.ToString(),
                 ActorSubjectId = currentUser?.SubjectId
             });
         }

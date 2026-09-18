@@ -9,7 +9,7 @@ export async function generateMetadata() {
   return { title: m.stocks.title };
 }
 export default async function Page() {
-  const { m } = await getI18n();
+  const { m, locale } = await getI18n();
 
   return (
     <>
@@ -18,6 +18,9 @@ export default async function Page() {
         description={m.stockOverview.description}
         action={
           <div className="flex flex-wrap gap-2">
+            <LinkButton secondary href="/reports">
+              {locale === "tr" ? "Sayım ve raporlar" : "Counts & reports"}
+            </LinkButton>
             <LinkButton secondary href="/stocks/transfer">
               <ArrowRightLeft className="size-4" />
               {m.stocks.transfer}

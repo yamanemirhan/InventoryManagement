@@ -24,6 +24,15 @@ public class StockMovement : CompanyEntity
         CreatedAtUtc = DateTime.UtcNow;
     }
 
+    public string? Reason { get; private set; }
+    public int? SignedDelta { get; private set; }
+    public Guid? PurchaseOrderId { get; private set; }
+    public StockMovement Annotate(string reason, int delta, Guid? purchaseOrderId = null)
+    {
+        if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length > 500) throw new DomainException("A reason of up to 500 characters is required.");
+        Reason = reason.Trim(); SignedDelta = delta; PurchaseOrderId = purchaseOrderId;
+        return this;
+    }
     public Guid ProductId { get; private set; }
     public Guid WarehouseId { get; private set; }
     public StockMovementType Type { get; private set; }

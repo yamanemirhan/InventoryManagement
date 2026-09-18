@@ -1,4 +1,4 @@
-﻿
+
 namespace InventoryManagement.Application.Common.Exceptions;
 
-public sealed class ConcurrencyException(string message, Exception innerException) : Exception(message, innerException);
+public sealed class ConcurrencyException(string message, Exception? innerException = null) : Exception(message, innerException);

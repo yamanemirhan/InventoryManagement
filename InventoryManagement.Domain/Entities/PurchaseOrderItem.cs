@@ -27,5 +27,17 @@ public class PurchaseOrderItem : CompanyEntity
     public int Quantity { get; private set; }
     public decimal UnitPrice { get; private set; }
 
+    public int ReceivedQuantity { get; private set; }
+    public int ReturnedQuantity { get; private set; }
+    public void Receive(int quantity)
+    {
+        if (quantity <= 0 || quantity > Quantity - ReceivedQuantity) throw new DomainException("Receipt exceeds the outstanding quantity.");
+        ReceivedQuantity += quantity;
+    }
+    public void Return(int quantity)
+    {
+        if (quantity <= 0 || quantity > ReceivedQuantity - ReturnedQuantity) throw new DomainException("Return exceeds the received quantity.");
+        ReturnedQuantity += quantity;
+    }
     public decimal TotalPrice => Quantity * UnitPrice;
 }

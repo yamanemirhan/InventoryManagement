@@ -50,6 +50,21 @@ Company endpoints follow `Controller → MediatR command/query → handler → r
 
 The company migration groups existing inventory under a legacy company. Platform Admin assigns its first owner; new accounts do not receive automatic access. Deploy the API and frontend together after migration. Reverting this migration requires restoring the matching database backup and application version; automatic downgrade is disabled.
 
+## Inventory operations
+
+- Owners invite teammates by email from `/companies`. Invitations expire after seven days, can be revoked or reissued, and are accepted only by the same verified email. Existing members retain their role when accepting an invitation. SMTP delivery is queued in PostgreSQL, retries up to eight times with backoff, and displays delivery status; reissuing creates a fresh invitation. Delivery is at-least-once, so an ambiguous SMTP acknowledgement can produce a duplicate email.
+- `/reports` filters stock by warehouse/product/SKU and minimum threshold. Selecting a warehouse includes products with no stock record. Owners/Managers record physical counts with a reason or set minimum quantities. Saved counts retain previous/count quantities and the actor; unchanged counts are still audited. Stale stock versions produce a conflict instead of overwriting concurrent work.
+- Minimum quantity zero disables the alert. Below-minimum rows appear on the dashboard and report page, update through SignalR, and are periodically refreshed. These are persistent, computed in-app warnings, not email or push alerts.
+- Purchase orders support line-level partial receipts and supplier returns with reasons. Stock, order progress and movements commit atomically, and expected order versions protect against repeated or concurrent submissions. Returns cannot exceed received-minus-returned quantities or available stock. Returns preserve receipt totals; replacements use a new purchase order.
+- Product CSV/XLSX import supports up to 1000 rows in a 1 MB file with `Name` and `Sku` headers. Preview validates every row and duplicate SKU before an atomic insert; existing products are never overwritten. Excel cells must be plain text/numbers, not formulas. Exports support CSV and XLSX; report exports use the selected filters and are capped at 5000 rows. Export pages are live reads, not an accounting snapshot. CSV text is protected against spreadsheet formula interpretation.
+- Stock movement and count reports support warehouse, product/SKU and UTC date filters. Movement reports include receipt/return references and reasons. Quantities retain the existing movement convention; adjustment direction is available as the signed delta.
+
+Deploy API and frontend together after `InventoryOperations`. The migration backfills received quantities for already-received purchase orders. It does not recount stock or resend historical transactions.
+
+Staging deployment reads SMTP settings locally from the existing Keycloak database into its untracked environment file; mail credentials are never copied into CI logs. Other environments configure `Mail:Host`, `Port`, `Username`, `Password`, `From`, `ImplicitTls` and HTTPS `AppOrigin`. SMTP requires TLS. Base64 configuration variants are encoding for safe environment-file transport, not encryption. Mail dispatch, like realtime dispatch, currently assumes one API instance per environment.
+
+Guest startup performs bounded silent SSO through the existing `/auth/callback` URI; it does not redirect the top-level page automatically when identity is unavailable. Explicit login/registration first checks identity availability. Tokens stay in memory. The small staging host has severe memory/I/O pressure; `tune-staging-identity` bounds its JVM heap and pools but does not guarantee sufficient capacity. Production settings are unchanged.
+
 ## Workspace and knowledge resources
 
 The home dashboard shows company inventory totals, open purchase orders, out-of-stock products and setup links. Owners and Managers can edit product, warehouse and supplier details from their detail pages.

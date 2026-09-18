@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { LowStockAlert } from "@/features/operations/reports";
 import { useQuery } from "@tanstack/react-query";
 import {
   Package,
@@ -87,6 +88,7 @@ export function DashboardPage() {
   ];
   return (
     <div className="space-y-7">
+      <LowStockAlert />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-brand">

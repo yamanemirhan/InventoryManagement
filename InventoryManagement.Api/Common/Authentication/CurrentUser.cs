@@ -9,5 +9,6 @@ public sealed class CurrentUser(IHttpContextAccessor accessor) : ICurrentUser
     public string SubjectId => Principal.FindFirstValue("sub") ?? throw new InvalidOperationException("Missing subject.");
     public string Name => Principal.FindFirstValue("name") ?? Principal.Identity?.Name ?? SubjectId;
     public string Email => Principal.FindFirstValue("email") ?? "";
+    public bool EmailVerified => bool.TryParse(Principal.FindFirstValue("email_verified"), out var verified) && verified;
     public bool IsPlatformAdmin => Principal.IsInRole("Admin");
 }

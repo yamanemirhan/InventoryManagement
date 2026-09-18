@@ -6,4 +6,5 @@ public interface ICurrentUser
     string Name { get; }
     string Email { get; }
     bool IsPlatformAdmin { get; }
+    bool EmailVerified => false;
 }

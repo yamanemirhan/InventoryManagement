@@ -46,15 +46,22 @@ export function initializeAuth(config: AuthConfig): Promise<Keycloak> {
     .then(() => instance);
   // An unavailable identity service must not navigate or indefinitely block the guest page.
   // A real OAuth callback still reports token exchange errors instead of hiding them.
-  initialization = window.location.pathname === "/auth/callback"
-    ? initializing
-    : new Promise<Keycloak>((resolve) => {
-        const timeout = window.setTimeout(() => resolve(instance), 8000);
-        void initializing.then(
-          () => { window.clearTimeout(timeout); resolve(instance); },
-          () => { window.clearTimeout(timeout); resolve(instance); },
-        );
-      });
+  initialization =
+    window.location.pathname === "/auth/callback"
+      ? initializing
+      : new Promise<Keycloak>((resolve) => {
+          const timeout = window.setTimeout(() => resolve(instance), 8000);
+          void initializing.then(
+            () => {
+              window.clearTimeout(timeout);
+              resolve(instance);
+            },
+            () => {
+              window.clearTimeout(timeout);
+              resolve(instance);
+            },
+          );
+        });
   return initialization;
 }
 export async function getAccessToken(): Promise<string | undefined> {

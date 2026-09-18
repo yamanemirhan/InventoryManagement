@@ -53,6 +53,11 @@ export function AppShell({
   ];
 
   nav.push({
+    href: "/reports",
+    label: t("Raporlar ve sayım", "Reports & counts"),
+    icon: ClipboardList,
+  });
+  nav.push({
     href: "/knowledge",
     label: t("Bilgi kaynakları", "Knowledge resources"),
     icon: BookOpen,

@@ -11,7 +11,7 @@ public sealed class WorkspaceReadRepository(AppDbContext db) : IWorkspaceReadRep
         await db.Products.CountAsync(x => !x.IsDeleted, ct),
         await db.Warehouses.CountAsync(ct), await db.Suppliers.CountAsync(ct),
         await db.Stocks.SumAsync(x => (long)x.Quantity, ct),
-        await db.PurchaseOrders.CountAsync(x => x.Status == PurchaseOrderStatus.Draft || x.Status == PurchaseOrderStatus.Ordered, ct),
+        await db.PurchaseOrders.CountAsync(x => x.Status == PurchaseOrderStatus.Draft || x.Status == PurchaseOrderStatus.Ordered || x.Status == PurchaseOrderStatus.PartiallyReceived, ct),
         await db.Products.CountAsync(x => !x.IsDeleted && !db.Stocks.Any(s => s.ProductId == x.Id && s.Quantity > 0), ct),
         await db.KnowledgeDocuments.CountAsync(x => x.Status == "Published", ct));
     public async Task<PagedResult<ActivityDto>> GetActivityAsync(int page, CancellationToken ct)

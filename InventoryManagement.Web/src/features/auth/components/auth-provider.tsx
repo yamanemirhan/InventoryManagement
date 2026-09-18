@@ -47,7 +47,10 @@ export function AuthProvider({
   });
   useEffect(() => {
     if (!config) return;
-    if (window.parent !== window && window.location.pathname === "/auth/callback") {
+    if (
+      window.parent !== window &&
+      window.location.pathname === "/auth/callback"
+    ) {
       window.parent.postMessage(window.location.href, window.location.origin);
       return;
     }
@@ -91,10 +94,23 @@ export function AuthProvider({
     if (!location.pathname.startsWith("/auth"))
       sessionStorage.setItem("inventory-return", path);
   };
+  const requireIdentity = async () => {
+    if (!config) throw new Error("Identity is not configured.");
+    const response = await fetch(
+      `${config.url.replace(/\/$/, "")}/realms/${encodeURIComponent(config.realm)}/.well-known/openid-configuration`,
+      {
+        cache: "no-store",
+        credentials: "omit",
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+    if (!response.ok) throw new Error("Identity is temporarily unavailable.");
+  };
   const value: AuthContextValue = {
     ...state,
     googleEnabled: config?.googleEnabled ?? false,
     login: async (google = false) => {
+      await requireIdentity();
       beforeLogin();
       await state.client?.login({
         locale,
@@ -103,6 +119,7 @@ export function AuthProvider({
       });
     },
     register: async () => {
+      await requireIdentity();
       beforeLogin();
       await state.client?.register({
         locale,

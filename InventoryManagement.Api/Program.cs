@@ -47,6 +47,8 @@ builder.Services.AddApplication();
 
 
 
+builder.Services.AddHostedService<InvitationEmailDispatcher>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

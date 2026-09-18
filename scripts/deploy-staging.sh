@@ -49,6 +49,7 @@ fi
 git merge --ff-only "${DEPLOY_SHA}"
 
 sudo -n python3 scripts/configure-staging-proxy.py
+sudo -n python3 scripts/configure-staging-mail.py
 
 export IMAGE_TAG="${DEPLOY_SHA}"
 export API_IMAGE_REPOSITORY

@@ -1,4 +1,5 @@
 "use client";
+import { Fulfillment } from "@/features/operations/fulfillment";
 import { AdminOnly } from "@/features/auth/components/access";
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -108,12 +109,16 @@ export function PurchaseOrderDetail({ id }: { id: string }) {
             (label, i) => (
               <li
                 key={label}
-                className={`flex items-center gap-2 text-xs ${order.status >= i + 1 ? "text-brand" : "text-muted"}`}
+                className={`flex items-center gap-2 text-xs ${(order.status === 5 ? 2 : order.status) >= i + 1 ? "text-brand" : "text-muted"}`}
               >
                 <span
-                  className={`grid size-6 place-items-center rounded-full ${order.status >= i + 1 ? "bg-brand-soft" : "bg-subtle"}`}
+                  className={`grid size-6 place-items-center rounded-full ${(order.status === 5 ? 2 : order.status) >= i + 1 ? "bg-brand-soft" : "bg-subtle"}`}
                 >
-                  {order.status > i + 1 ? <Check className="size-3" /> : i + 1}
+                  {(order.status === 5 ? 2 : order.status) > i + 1 ? (
+                    <Check className="size-3" />
+                  ) : (
+                    i + 1
+                  )}
                 </span>
                 {label}
                 {i < 2 && <ChevronRight className="ml-2 size-3 text-muted" />}
@@ -171,6 +176,7 @@ export function PurchaseOrderDetail({ id }: { id: string }) {
       </section>
       <p className="text-xs leading-6 text-muted">{m.orders.priceNote}</p>
       <AdminOnly>
+        <Fulfillment key={order.version} order={order} />
         <section className="panel p-6">
           <p className="mb-5 text-sm text-muted">{m.orders.receiptNote}</p>
           <div className="flex flex-wrap gap-3">
@@ -183,7 +189,7 @@ export function PurchaseOrderDetail({ id }: { id: string }) {
                   (value === "order"
                     ? order.status !== 1
                     : value === "receive"
-                      ? order.status !== 2
+                      ? order.status !== 2 && order.status !== 5
                       : order.status !== 1 && order.status !== 2)
                 }
                 onClick={(event) => {

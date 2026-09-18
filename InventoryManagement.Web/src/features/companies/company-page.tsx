@@ -1,4 +1,5 @@
 "use client";
+import { Invitations } from "@/features/operations/invitations";
 import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, UsersRound, ShieldCheck } from "lucide-react";
@@ -242,6 +243,7 @@ export function CompanyPage() {
           )}
         </p>
       </div>
+      <Invitations />
       <div className="grid gap-5 md:grid-cols-2">
         <section className="panel space-y-3 p-6">
           <ShieldCheck className="text-brand" />
@@ -258,8 +260,8 @@ export function CompanyPage() {
           </p>
           <p className="text-xs text-muted">
             {t(
-              "Bir şirkete katılmak için aşağıdaki kimliği şirket sahibine iletin.",
-              "To join a company, share this ID with its owner.",
+              "Şirket sahibi e-postanıza davet gönderebilir. Hesap kimliğiniz:",
+              "The company owner can invite your email. Your account ID:",
             )}
           </p>
           <code className="block select-all break-all rounded-lg bg-subtle p-3 text-xs">
@@ -346,4 +348,3 @@ export function CompanyPage() {
     </div>
   );
 }
-

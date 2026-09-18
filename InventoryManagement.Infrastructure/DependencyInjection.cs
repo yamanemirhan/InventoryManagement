@@ -25,11 +25,17 @@ public static class DependencyInjection
         services.AddScoped<IWorkspaceReadRepository, WorkspaceReadRepository>();
         services.AddScoped<IRealtimeEventStore, RealtimeEventStore>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<ICompanyInvitationRepository, CompanyInvitationRepository>();
+        services.AddScoped<IInvitationDeliveryStore, InvitationDeliveryStore>();
+        services.AddScoped<IInvitationEmailSender, InventoryManagement.Infrastructure.Email.InvitationEmailSender>();
         services.AddScoped<ICompanyReadRepository, CompanyReadRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IProductImportRepository, ProductImportRepository>();
         services.AddScoped<IProductReadRepository, ProductReadRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IStockRepository, StockRepository>();
+        services.AddScoped<IStockCountRepository, StockCountRepository>();
+        services.AddScoped<IInventoryReportRepository, InventoryReportRepository>();
         services.AddScoped<IStockReadRepository, StockReadRepository>();
         services.AddScoped<IStockMovementRepository, StockMovementRepository>();
         services.AddScoped<IStockMovementReadRepository, StockMovementReadRepository>();

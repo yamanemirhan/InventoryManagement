@@ -93,3 +93,5 @@ compose.override.yml
 !/scripts/deploy-staging.sh
 !/scripts/rollback-production.sh
 !/scripts/operations.py
+
+!scripts/configure-staging-mail.py

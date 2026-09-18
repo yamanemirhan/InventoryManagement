@@ -2,6 +2,7 @@ import { AdminOnly } from "@/features/auth/components/access";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { LinkButton } from "@/components/ui/link-button";
+import { ProductImport } from "@/features/operations/product-import";
 import { ProductsList } from "@/features/products/components/products-list";
 import { getI18n } from "@/lib/i18n/server";
 export async function generateMetadata() {
@@ -26,6 +27,9 @@ export default async function Page() {
         }
       />
       <ProductsList />
+      <AdminOnly>
+        <ProductImport />
+      </AdminOnly>
     </>
   );
 }

@@ -16,6 +16,14 @@ namespace InventoryManagement.Api.Controllers;
 [Route("api/stocks")]
 public class StocksController(ISender sender) : ControllerBase
 {
+    [HttpPost("count")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    public async Task<IActionResult> Count(InventoryManagement.Application.Stocks.Commands.CountStock.CountStockCommand command, CancellationToken ct)
+    { await sender.Send(command, ct); return NoContent(); }
+    [HttpPut("minimum")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    public async Task<IActionResult> Minimum(InventoryManagement.Application.Stocks.Commands.SetMinimumStock.SetMinimumStockCommand command, CancellationToken ct)
+    { await sender.Send(command, ct); return NoContent(); }
     [HttpGet]
     public async Task<IActionResult> GetOverview(CancellationToken ct) =>
         Ok(await sender.Send(new GetStockOverviewQuery(), ct));

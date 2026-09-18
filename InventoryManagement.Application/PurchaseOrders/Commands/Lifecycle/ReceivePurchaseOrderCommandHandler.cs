@@ -11,8 +11,9 @@ public sealed class ReceivePurchaseOrderCommandHandler(IPurchaseOrderRepository 
     {
         var order = await orders.GetByIdAsync(request.Id, ct) ?? throw new KeyNotFoundException("Purchase order not found.");
         // Validate the transition before touching stock. xmin protects against concurrent lifecycle requests.
+        var remaining = order.Items.Where(x => x.ReceivedQuantity < x.Quantity).Select(x => new { x.ProductId, Quantity = x.Quantity - x.ReceivedQuantity }).ToList();
         order.MarkAsReceived();
-        foreach (var item in order.Items.OrderBy(x => x.ProductId))
+        foreach (var item in remaining.OrderBy(x => x.ProductId))
         {
             var stock = await stocks.GetAsync(item.ProductId, order.WarehouseId, ct);
             if (stock is null)
@@ -21,7 +22,7 @@ public sealed class ReceivePurchaseOrderCommandHandler(IPurchaseOrderRepository 
                 await stocks.AddAsync(stock, ct);
             }
             stock.Increase(item.Quantity);
-            await movements.AddAsync(new StockMovement(item.ProductId, order.WarehouseId, StockMovementType.In, item.Quantity), ct);
+            await movements.AddAsync(new StockMovement(item.ProductId, order.WarehouseId, StockMovementType.In, item.Quantity).Annotate("Purchase receipt", item.Quantity, order.Id), ct);
         }
         // EF commits the order, every stock row and every movement in one database transaction.
         await unitOfWork.SaveChangesAsync(ct);

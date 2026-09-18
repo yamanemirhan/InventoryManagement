@@ -18,6 +18,19 @@ public class Stock : CompanyEntity
     public Guid WarehouseId { get; private set; }
     public int Quantity { get; private set; }
     public uint Version { get; private set; }
+    public int MinimumQuantity { get; private set; }
+    public int CountRevision { get; private set; }
+    public void SetMinimum(int minimum)
+    {
+        if (minimum < 0) throw new DomainException("Minimum stock cannot be negative.");
+        MinimumQuantity = minimum;
+    }
+    public void Count(int quantity)
+    {
+        if (quantity < 0) throw new DomainException("Counted stock cannot be negative.");
+        Quantity = quantity;
+        CountRevision++;
+    }
 
 
     public void Increase(int quantity)

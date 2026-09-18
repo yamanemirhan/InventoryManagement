@@ -1,12 +1,14 @@
 "use client";
 import { Boxes, ArrowRight, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import { useCompanyText } from "@/features/companies/company-provider";
 import { useAuth } from "./auth-provider";
 import { useI18n } from "@/lib/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 export function LoginPanel() {
   const auth = useAuth();
+  const t = useCompanyText();
   const { m } = useI18n();
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
@@ -43,7 +45,12 @@ export function LoginPanel() {
               title={
                 auth.status === "configuration"
                   ? m.auth.configuration
-                  : m.auth.error
+                  : error
+                    ? t(
+                        "Giriş hizmeti şu anda yanıt vermiyor. Biraz sonra yeniden deneyin.",
+                        "Sign-in service is unavailable. Please try again shortly.",
+                      )
+                    : m.auth.error
               }
             />
           </div>

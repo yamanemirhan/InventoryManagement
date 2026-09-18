@@ -14,6 +14,13 @@ services:
     environment:
       Authentication__Authority: ${KEYCLOAK_AUTHORITY:?Set KEYCLOAK_AUTHORITY}
       Authentication__Audience: inventory-api
+      Mail__HostBase64: ${MAIL_HOST_BASE64:-}
+      Mail__PortBase64: ${MAIL_PORT_BASE64:-}
+      Mail__UsernameBase64: ${MAIL_USERNAME_BASE64:-}
+      Mail__PasswordBase64: ${MAIL_PASSWORD_BASE64:-}
+      Mail__FromBase64: ${MAIL_FROM_BASE64:-}
+      Mail__ImplicitTlsBase64: ${MAIL_IMPLICITTLS_BASE64:-}
+      Mail__AppOrigin: ${KEYCLOAK_URL}
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
     healthcheck:
