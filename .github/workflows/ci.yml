@@ -181,6 +181,7 @@ jobs:
       id-token: write
       packages: read
     env:
+      PRODUCTION_HEALTH_URL: ${{ vars.PRODUCTION_HEALTH_URL }}
       AZURE_CORE_OUTPUT: none
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       AZURE_NSG_NAME: ${{ vars.AZURE_NSG_NAME }}
@@ -282,24 +283,18 @@ jobs:
         run: |
           set -Eeuo pipefail
 
-          for attempt in {1..12}; do
-            if ssh \
-              -i ~/.ssh/id_ed25519 \
-              -o BatchMode=yes \
-              -o ConnectTimeout=10 \
-              "${SERVER_USER}@${SERVER_HOST}" \
-              "DEPLOY_SHA='${DEPLOY_SHA}' API_IMAGE_REPOSITORY='${API_IMAGE_REPOSITORY}' FRONTEND_IMAGE_REPOSITORY='${FRONTEND_IMAGE_REPOSITORY}' bash -s" \
-              < scripts/deploy-production.sh; then
-              exit 0
-            fi
-
-            if [[ "$attempt" -eq 12 ]]; then
-              echo "Deployment failed after waiting for SSH access." >&2
-              exit 1
-            fi
-
-            sleep 5
-          done
+          # Registry login above already established SSH access. Run the
+          # deployment once: a failed migration/configuration is not an SSH retry.
+          production_health_base64="$(printf '%s' "$PRODUCTION_HEALTH_URL" | base64 -w0)"
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=3 \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "DEPLOY_SHA='${DEPLOY_SHA}' API_IMAGE_REPOSITORY='${API_IMAGE_REPOSITORY}' FRONTEND_IMAGE_REPOSITORY='${FRONTEND_IMAGE_REPOSITORY}' PRODUCTION_HEALTH_URL_BASE64='${production_health_base64}' bash -s" \
+            < scripts/deploy-production.sh
 
       - name: Log out server from GitHub Container Registry
         if: always() && steps.configure-ssh.outcome == 'success'
@@ -444,24 +439,17 @@ jobs:
         run: |
           set -Eeuo pipefail
 
-          for attempt in {1..12}; do
-            if ssh \
-              -i ~/.ssh/id_ed25519 \
-              -o BatchMode=yes \
-              -o ConnectTimeout=10 \
-              "${SERVER_USER}@${SERVER_HOST}" \
-              "DEPLOY_SHA='${DEPLOY_SHA}' API_IMAGE_REPOSITORY='${API_IMAGE_REPOSITORY}' FRONTEND_IMAGE_REPOSITORY='${FRONTEND_IMAGE_REPOSITORY}' bash -s" \
-              < scripts/deploy-staging.sh; then
-              exit 0
-            fi
-
-            if [[ "$attempt" -eq 12 ]]; then
-              echo "Deployment failed after waiting for SSH access." >&2
-              exit 1
-            fi
-
-            sleep 5
-          done
+          # Registry login above already established SSH access. Run the
+          # deployment once: a failed migration/configuration is not an SSH retry.
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=3 \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "DEPLOY_SHA='${DEPLOY_SHA}' API_IMAGE_REPOSITORY='${API_IMAGE_REPOSITORY}' FRONTEND_IMAGE_REPOSITORY='${FRONTEND_IMAGE_REPOSITORY}' bash -s" \
+            < scripts/deploy-staging.sh
 
       - name: Verify public health endpoint
         run: |

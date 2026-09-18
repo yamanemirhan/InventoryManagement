@@ -55,6 +55,7 @@ export IMAGE_TAG="${DEPLOY_SHA}"
 export API_IMAGE_REPOSITORY
 export FRONTEND_IMAGE_REPOSITORY
 
+docker compose --env-file "${environment_file}" -f "${compose_file}" --profile migration config --quiet
 docker compose --env-file "${environment_file}" -f "${compose_file}" pull api frontend
 
 for image in "${api_image}" "${frontend_image}"; do

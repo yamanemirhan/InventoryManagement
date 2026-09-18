@@ -90,6 +90,7 @@ compose.override.yml
 !/scripts/configure-identity.mjs
 !/scripts/configure-staging-proxy.py
 !/scripts/deploy-production.sh
+!/scripts/configure-production-env.py
 !/scripts/deploy-staging.sh
 !/scripts/rollback-production.sh
 !/scripts/operations.py

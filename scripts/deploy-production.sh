@@ -44,10 +44,13 @@ fi
 git checkout main
 git merge --ff-only "${DEPLOY_SHA}"
 
+sudo -n python3 scripts/configure-production-env.py "${PRODUCTION_HEALTH_URL_BASE64:-}"
+
 export IMAGE_TAG="${DEPLOY_SHA}"
 export API_IMAGE_REPOSITORY
 export FRONTEND_IMAGE_REPOSITORY
 
+docker compose --env-file "${environment_file}" -f "${compose_file}" --profile migration config --quiet
 docker compose --env-file "${environment_file}" -f "${compose_file}" pull api frontend
 
 for image in "${api_image}" "${frontend_image}"; do
