@@ -20,6 +20,7 @@ export function initializeAuth(config: AuthConfig): Promise<Keycloak> {
   });
   const instance = client;
   const changed = () => window.dispatchEvent(new Event(sessionEvent));
+  instance.onAuthSuccess = changed;
   instance.onAuthLogout = changed;
   instance.onAuthRefreshSuccess = changed;
   instance.onAuthRefreshError = () => {
@@ -29,17 +30,31 @@ export function initializeAuth(config: AuthConfig): Promise<Keycloak> {
   instance.onTokenExpired = () => {
     void getAccessToken().catch(() => instance.clearToken());
   };
-  initialization = instance
+  const initializing = instance
     .init({
       onLoad: "check-sso",
       pkceMethod: "S256",
       flow: "standard",
       checkLoginIframe: false,
+      silentCheckSsoRedirectUri: window.location.origin + "/auth/callback",
+      silentCheckSsoFallback: false,
+      messageReceiveTimeout: 5000,
       responseMode: "query",
       redirectUri: window.location.origin + "/auth/callback",
       enableLogging: false,
     })
     .then(() => instance);
+  // An unavailable identity service must not navigate or indefinitely block the guest page.
+  // A real OAuth callback still reports token exchange errors instead of hiding them.
+  initialization = window.location.pathname === "/auth/callback"
+    ? initializing
+    : new Promise<Keycloak>((resolve) => {
+        const timeout = window.setTimeout(() => resolve(instance), 8000);
+        void initializing.then(
+          () => { window.clearTimeout(timeout); resolve(instance); },
+          () => { window.clearTimeout(timeout); resolve(instance); },
+        );
+      });
   return initialization;
 }
 export async function getAccessToken(): Promise<string | undefined> {

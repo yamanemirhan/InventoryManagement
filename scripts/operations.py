@@ -108,6 +108,37 @@ def restart_staging_identity():
     run(["docker", "restart", "--time", "30", ids[0]])
     print(json.dumps({"stagingIdentity": "restarted", "readinessVerified": False}))
 
+def tune_staging_identity():
+    root = pathlib.Path("/opt/inventory-identity/staging").resolve()
+    ids = run(["docker", "ps", "-q", "--filter", "label=com.docker.compose.project=inventory-identity-staging",
+               "--filter", "label=com.docker.compose.service=keycloak"]).decode().split()
+    if len(ids) != 1:
+        raise RuntimeError("Expected one staging identity service")
+    labels = json.loads(run(["docker", "inspect", "--format", "{{json .Config.Labels}}", ids[0]]))
+    if pathlib.Path(labels["com.docker.compose.project.working_dir"]).resolve() != root:
+        raise RuntimeError("Unexpected staging identity directory")
+    files = [pathlib.Path(p).resolve() for p in labels["com.docker.compose.project.config_files"].split(",")]
+    if any(not p.is_relative_to(root) for p in files):
+        raise RuntimeError("Identity compose file is outside staging directory")
+    override = root / "compose.resources.json"
+    if override.exists():
+        shutil.copy2(override, root / "compose.resources.previous.json")
+    save(override, {"services": {"keycloak": {"environment": {
+        "JAVA_OPTS_KC_HEAP": "-Xms64m -Xmx256m",
+        "KC_DB_POOL_INITIAL_SIZE": "1", "KC_DB_POOL_MIN_SIZE": "1", "KC_DB_POOL_MAX_SIZE": "5",
+        "KC_HTTP_POOL_MAX_THREADS": "8", "KC_CACHE_EMBEDDED_SESSIONS_MAX_COUNT": "100",
+        "KC_CACHE_EMBEDDED_CLIENT_SESSIONS_MAX_COUNT": "100"
+    }}}})
+    if override not in files:
+        files.append(override)
+    command = ["docker", "compose", "--project-name", "inventory-identity-staging", "--project-directory", str(root),
+               "--env-file", str(root / ".env.identity")]
+    for path in files:
+        command.extend(["-f", str(path)])
+    run(command + ["config", "--quiet"])
+    run(command + ["up", "-d", "--no-deps", "keycloak"])
+    print(json.dumps({"stagingIdentity": "resource-limits-configured", "heapMaxMiB": 256, "readinessVerified": False}))
+
 def backup():
     if not (CONFIG / "backup-passphrase").exists():
         raise RuntimeError("Backup encryption passphrase is not configured")
@@ -304,7 +335,7 @@ def install(recipient):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["inspect", "install", "backup", "restore-drill", "monitor", "alert-check", "status", "restart-staging-identity"])
+    parser.add_argument("action", choices=["inspect", "install", "backup", "restore-drill", "monitor", "alert-check", "status", "restart-staging-identity", "tune-staging-identity"])
     parser.add_argument("--recipient", default="")
     args = parser.parse_args()
     if os.geteuid() != 0:
@@ -314,6 +345,7 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX)
         if args.action == "inspect": inspect()
         elif args.action == "restart-staging-identity": restart_staging_identity()
+        elif args.action == "tune-staging-identity": tune_staging_identity()
         elif args.action == "install": install(args.recipient)
         elif args.action == "backup": backup()
         elif args.action == "restore-drill": restore_drill()

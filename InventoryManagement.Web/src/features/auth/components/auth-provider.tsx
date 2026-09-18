@@ -47,6 +47,10 @@ export function AuthProvider({
   });
   useEffect(() => {
     if (!config) return;
+    if (window.parent !== window && window.location.pathname === "/auth/callback") {
+      window.parent.postMessage(window.location.href, window.location.origin);
+      return;
+    }
     let active = true;
     let instance: Keycloak | undefined;
     const update = () => {
