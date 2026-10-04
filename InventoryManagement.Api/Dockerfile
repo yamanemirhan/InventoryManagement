@@ -11,6 +11,7 @@ COPY ["InventoryManagement.Infrastructure/InventoryManagement.Infrastructure.csp
 RUN dotnet restore "InventoryManagement.Api/InventoryManagement.Api.csproj"
 
 FROM restore AS publish
+ARG TARGETARCH
 COPY ["InventoryManagement.Api/", "InventoryManagement.Api/"]
 COPY ["InventoryManagement.Application/", "InventoryManagement.Application/"]
 COPY ["InventoryManagement.Domain/", "InventoryManagement.Domain/"]
@@ -30,7 +31,7 @@ RUN dotnet tool install --tool-path /tools dotnet-ef --version 10.0.11 && \
         --startup-project "InventoryManagement.Api/InventoryManagement.Api.csproj" \
         --configuration Release \
         --no-build \
-        --target-runtime linux-x64 \
+        --target-runtime "linux-$(if [ "$TARGETARCH" = arm64 ]; then echo arm64; else echo x64; fi)" \
         --output /app/publish/efbundle \
         --force
 

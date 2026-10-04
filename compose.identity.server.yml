@@ -1,4 +1,4 @@
-# Run independently of application deployments; see IDENTITY_ENVIRONMENTS.md.
+# Persistent identity stack. Project directory contains .env.identity and realms/.
 name: inventory-identity-${IDENTITY_ENVIRONMENT:?Set IDENTITY_ENVIRONMENT}
 
 services:
@@ -7,6 +7,10 @@ services:
     ports:
       - "127.0.0.1:${IDENTITY_DB_PORT:?Set IDENTITY_DB_PORT}:5432"
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    shm_size: 128m
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "work_mem=4MB", "-c", "max_connections=60"]
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
@@ -23,6 +27,8 @@ services:
     image: quay.io/keycloak/keycloak:26.7.3
     command: ["start", "--import-realm"]
     restart: unless-stopped
+    mem_limit: 1536m
+    cpus: 1.0
     depends_on:
       identity-db:
         condition: service_healthy
@@ -39,10 +45,24 @@ services:
       KC_HTTP_RELATIVE_PATH: /identity
       KC_PROXY_HEADERS: xforwarded
       KC_HEALTH_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_RELATIVE_PATH: /
+      KC_HTTP_MANAGEMENT_SCHEME: http
+      JAVA_OPTS_KC_HEAP: "-Xms128m -Xmx768m"
+      KC_DB_POOL_INITIAL_SIZE: "1"
+      KC_DB_POOL_MIN_SIZE: "1"
+      KC_DB_POOL_MAX_SIZE: "10"
+      KC_HTTP_POOL_MAX_THREADS: "24"
+    healthcheck:
+      test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'HEAD /health/ready HTTP/1.0\\r\\n\\r\\n' >&3; grep -q 'HTTP/1.0 200' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 24
+      start_period: 90s
     ports:
       - "127.0.0.1:${IDENTITY_HTTP_PORT:?Set IDENTITY_HTTP_PORT}:8080"
     volumes:
       - ./realms:/opt/keycloak/data/import:ro
+      - ./themes:/opt/keycloak/themes:ro
 
 volumes:
   identity_postgres_data:

@@ -60,6 +60,12 @@ def stages():
 
 def app_env(stage):
     source = env_file(APP / f".env.{stage}")
+    if source.get("APP_DB_PASSWORD"):
+        result = dict(os.environ)
+        result.update(PGHOST="127.0.0.1", PGPORT="55434" if stage == "staging" else "55432",
+                      PGDATABASE="inventory_" + stage, PGUSER="inventory_" + stage,
+                      PGPASSWORD=source["APP_DB_PASSWORD"], PGSSLMODE="disable")
+        return result
     values = {}
     for part in source["DATABASE_CONNECTION_STRING"].split(";"):
         if "=" in part:
@@ -136,9 +142,9 @@ def tune_staging_identity():
     if override.exists():
         shutil.copy2(override, root / "compose.resources.previous.json")
     save(override, {"services": {"keycloak": {"environment": {
-        "JAVA_OPTS_KC_HEAP": "-Xms64m -Xmx256m",
-        "KC_DB_POOL_INITIAL_SIZE": "1", "KC_DB_POOL_MIN_SIZE": "1", "KC_DB_POOL_MAX_SIZE": "5",
-        "KC_HTTP_POOL_MAX_THREADS": "8", "KC_CACHE_EMBEDDED_SESSIONS_MAX_COUNT": "100",
+        "JAVA_OPTS_KC_HEAP": "-Xms128m -Xmx768m",
+        "KC_DB_POOL_INITIAL_SIZE": "1", "KC_DB_POOL_MIN_SIZE": "1", "KC_DB_POOL_MAX_SIZE": "10",
+        "KC_HTTP_POOL_MAX_THREADS": "24", "KC_CACHE_EMBEDDED_SESSIONS_MAX_COUNT": "100",
         "KC_CACHE_EMBEDDED_CLIENT_SESSIONS_MAX_COUNT": "100"
     }}}})
     if override not in files:
@@ -149,7 +155,7 @@ def tune_staging_identity():
         command.extend(["-f", str(path)])
     run(command + ["config", "--quiet"])
     run(command + ["up", "-d", "--no-deps", "keycloak"])
-    print(json.dumps({"stagingIdentity": "resource-limits-configured", "heapMaxMiB": 256, "readinessVerified": False}))
+    print(json.dumps({"stagingIdentity": "resource-limits-configured", "heapMaxMiB": 768, "readinessVerified": False}))
 
 def backup():
     if not (CONFIG / "backup-passphrase").exists():

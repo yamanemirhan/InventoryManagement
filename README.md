@@ -63,7 +63,7 @@ Deploy API and frontend together after `InventoryOperations`. The migration back
 
 Staging deployment reads SMTP settings locally from the existing Keycloak database into its untracked environment file; mail credentials are never copied into CI logs. Other environments configure `Mail:Host`, `Port`, `Username`, `Password`, `From`, `ImplicitTls` and HTTPS `AppOrigin`. SMTP requires TLS. Base64 configuration variants are encoding for safe environment-file transport, not encryption. Mail dispatch, like realtime dispatch, currently assumes one API instance per environment.
 
-Guest startup performs bounded silent SSO through the existing `/auth/callback` URI; it does not redirect the top-level page automatically when identity is unavailable. Explicit login/registration first checks identity availability. Tokens stay in memory. The small staging host has severe memory/I/O pressure; `tune-staging-identity` bounds its JVM heap and pools but does not guarantee sufficient capacity. Production settings are unchanged.
+Guest startup performs bounded silent SSO through the existing `/auth/callback` URI; it does not redirect the top-level page automatically when identity is unavailable. Explicit login/registration first checks identity availability. Tokens stay in memory. Production and staging use separate identity services on the Oracle host, with bounded JVM heaps, database pools and container resources.
 
 ## Workspace and knowledge resources
 
@@ -123,13 +123,217 @@ npm run build
 
 ## Deployment and configuration
 
-The existing GitHub Actions workflow builds and checks the application, publishes container images, deploys `develop` to staging and `main` to production. Deployments use environment files on the server and GitHub Actions secrets for infrastructure access. Deploying Keycloak is a separate, persistent operation. `scripts/configure-identity.mjs` reads credentials from an untracked environment file; generated realm exports stay under `.local/`.
+Production and staging run on an Oracle Ubuntu ARM64 VM. `develop` deploys staging;
+`main` deploys production. The existing CI still validates the application and
+publishes SHA-tagged GHCR images. Image publishing uses a native
+`ubuntu-24.04-arm` runner and `linux/arm64`, avoiding .NET/QEMU emulation. Dockerfiles
+also support native AMD64 builds; the EF bundle selects `linux-arm64` or `linux-x64`
+from Docker's `TARGETARCH`. This workflow intentionally publishes ARM64 images only.
+See [GitHub runner architectures](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 
-Configure repository variables `AZURE_RESOURCE_GROUP`, `AZURE_NSG_NAME`, `STAGING_HEALTH_URL` and `PRODUCTION_HEALTH_URL` for the existing workflows. Authentication and SSH values remain GitHub Actions secrets. The staging proxy helper reads the hostname from the server's untracked `.env.staging` (`KEYCLOAK_URL`); active Nginx files stay on the server.
+Each environment has three application services (`app-db`, `api`, `frontend`) and
+an independent identity stack (`identity-db`, `keycloak`). Application and identity
+networks and named PostgreSQL volumes are project-scoped. No database is published
+on a public interface. Application containers reach their own issuer over HTTPS via
+Docker's host gateway, retaining TLS certificate and issuer validation.
 
-Production deployments fill missing `KEYCLOAK_URL` and `KEYCLOAK_AUTHORITY` in the server's `.env.production` before Compose validation. Existing settings take precedence, followed by `/opt/inventory-identity/production/.env.identity`; otherwise the public origin comes from `PRODUCTION_HEALTH_URL`, with `/identity` and realm `inventory-production`. The helper preserves database credentials and writes atomically with mode 0600. It does not create a Keycloak server, realm or Google provider: provision those separately before enabling production sign-in. Staging credentials and realms are never substituted for production. Application deployment runs once; configuration or migration failures are reported immediately instead of retrying the entire deployment as an SSH error.
+| Environment | Frontend | API | Keycloak | Application DB | Identity DB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Production | 3000 | 8080 | 8180 | 55432 | 55435 |
+| Staging | 3001 | 8081 | 8181 | 55434 | 55433 |
 
-Only README Markdown files are tracked. Environment-specific `deploy/` files stay local; the development Keycloak realm and blank templates are explicitly allowed. Reusable scripts required by CI and local identity setup are allowlisted; new scripts and infrastructure files are ignored until reviewed.
+All ports bind to `127.0.0.1`. Database/user names are `inventory_production` and
+`inventory_staging` for application PostgreSQL; both isolated Keycloak databases
+use database/user `keycloak`. PostgreSQL 17 has a 512 MiB container limit, 128 MiB
+shared buffers and at most 60 connections. Each Keycloak has a 1536 MiB container
+limit and 768 MiB maximum JVM heap; API/frontend limits are 768/512 MiB. These are
+limits, not reserved memory, and leave room for the OS on a 12 GiB host.
+
+### Runtime configuration and initial setup
+
+The server repository is `/opt/inventory-management`. Runtime secrets never live
+in Git. Bootstrap creates distinct application DB, identity DB and administrator
+passwords for each environment, writes env files atomically with mode 0600 and
+preserves existing credentials on subsequent deployments. Do not replace passwords
+in an initialized PostgreSQL volume without changing the database role password.
+
+| File | Purpose |
+| --- | --- |
+| `/opt/inventory-management/.env.production` | Production application DB connection and invitation mail settings |
+| `/opt/inventory-management/.env.staging` | Staging application DB connection and invitation mail settings |
+| `/opt/inventory-identity/production/.env.identity` | Production Keycloak admin/DB, Google and SMTP settings |
+| `/opt/inventory-identity/staging/.env.identity` | Staging Keycloak admin/DB, Google and SMTP settings |
+| `/opt/inventory-runtime/<stage>/compose.<stage>.yml` | Last configured application service definition |
+| `/opt/inventory-runtime/<stage>/images.env` | Last healthy image repositories and exact tag |
+
+Blank templates are `.env.production.example`, `.env.staging.example` and
+`deploy/keycloak/{production,staging}.env.example`. Local development retains its
+own `compose.identity.yml`, localhost endpoints and realm, using the shared theme.
+
+On a new host with Docker, host Nginx, a valid Certbot certificate and the repository:
+
+```sh
+cd /opt/inventory-management
+sudo python3 scripts/oracle-server.py prepare staging
+sudo python3 scripts/oracle-server.py prepare production
+# Securely edit the two identity env files to fill Google and SMTP settings.
+sudo python3 scripts/oracle-server.py prepare staging
+sudo python3 scripts/oracle-server.py prepare production
+sudo python3 scripts/oracle-server.py nginx
+```
+
+### File-managed Keycloak configuration
+
+Production and staging are configured from these tracked, secret-free JSON files:
+
+- `deploy/keycloak/server-realm.template.json`: realm settings, roles, clients,
+  exact web redirects, PKCE, default token scopes and API audience mapper.
+- `deploy/keycloak/google-provider.template.json`: Google broker settings.
+- `deploy/keycloak/smtp.template.json`: verification/password recovery email settings.
+
+`${IDENTITY_ENVIRONMENT}` and `${APP_ORIGIN}` select the environment. Google and
+SMTP placeholders are read from that environment's protected `.env.identity`.
+Development uses `development-realm.json` with the same theme/password/session
+settings, retaining its localhost endpoints and optional email verification.
+
+`prepare` renders a secret-free realm import into the matching identity directory
+and copies provider templates into its `config/` directory. Startup import creates
+only missing realms: restarting alone does not update an existing realm.
+`identity` applies the file-managed realm/client settings, roles, scopes, audience
+mapper, SMTP and Google provider through the admin API and verifies the result.
+Provider secrets are substituted only in memory. Users, credentials, sessions,
+unmanaged clients and existing role assignments are retained; roles/default scopes
+are added without removing existing ones. No Keycloak admin UI changes are needed.
+CI performs both steps for its deployment environment automatically.
+
+To apply edited JSON files to an already running environment without rebuilding
+application images or restarting Keycloak:
+
+```sh
+cd /opt/inventory-management
+sudo python3 scripts/oracle-server.py prepare staging
+sudo python3 scripts/oracle-server.py identity staging
+# Use production instead of staging for production settings.
+```
+
+The app-owned theme in `deploy/keycloak/themes/inventory/login` renders every
+authentication flow: login, registration, email verification, password recovery,
+profile/password updates, and error/consent pages. Forms submit directly to the
+identity service with its original authentication session, CSRF protections and
+PKCE callback. Identity URLs remain under `/identity/`; default Keycloak styling
+and branding are replaced. The application `/account` page shows profile details
+and launches profile/password changes through the same custom design.
+
+Theme assets are copied to each environment's `themes/` directory and mounted
+read-only. CI recreates only Keycloak when theme content changes, to invalidate
+template caches. Custom resource URLs include a content-derived version to avoid
+stale browser CSS/scripts after deployment; development disables theme caching.
+For manual theme edits, run `prepare`, recreate Keycloak using
+the stage's Compose definition, then run `identity`. Realm/client/provider-only
+changes require no restart. Themes and app UI share Turkish/English messages and
+the selected light/dark and forest/indigo preferences.
+
+Passwords require 12–128 characters, an uppercase letter, a lowercase letter and
+a digit; email/username cannot be used as the password. Keycloak enforces these
+rules on the server. Production/staging registration verifies email first, then
+sets the password and returns to the original authenticated application callback.
+Duplicate/invalid emails are rejected. Password recovery keeps responses generic
+and uses Keycloak's expiring email action tokens. Remember-me uses secure identity
+cookies with a 7-day idle limit and 30-day maximum; ordinary sessions retain their
+30-minute idle / 10-hour maximum. Tokens/passwords are never stored in localStorage.
+
+Keep `verifyEmail=true`; SMTP must work for verified registration, password
+recovery and invitations. Configure either STARTTLS or SSL. The separate
+`configure-identity.mjs` tool remains available for local development.
+
+Google values are `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in each identity env.
+Separate OAuth clients are recommended; one client may explicitly authorize both:
+
+- Production redirect: `https://inventory-yamanemirhan.duckdns.org/identity/realms/inventory-production/broker/google/endpoint`
+- Staging redirect: `https://staging-inventory-yamanemirhan.duckdns.org/identity/realms/inventory-staging/broker/google/endpoint`
+- Authorized origins: `https://inventory-yamanemirhan.duckdns.org` and `https://staging-inventory-yamanemirhan.duckdns.org`
+
+These broker redirects are different from the web client's exact
+`/auth/callback` redirect. Add both broker URLs to **Authorized redirect URIs** of
+the exact Google Web application client selected by `GOOGLE_CLIENT_ID`, with no
+trailing slash. Google maintains this allowlist separately; Keycloak files cannot
+update it. Adding an address only to Authorized JavaScript origins is insufficient.
+A Google `400 redirect_uri_mismatch` means the requested URI is not authorized on
+that Google client. After saving in Google, start a fresh application login.
+Passwords remain exclusively in Keycloak. The browser
+uses Authorization Code + PKCE and sends Keycloak access tokens to the API.
+Registration continues within the original authentication session. Assign realm
+`Admin` to the intended operator account in each realm after registration; new
+users receive `User`, never platform administrator rights.
+
+SMTP keys in each identity env are `SMTP_FROM`, `SMTP_HOST`, `SMTP_PORT`,
+`SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_STARTTLS`, `SMTP_SSL`. `prepare` maps them to
+the application's existing base64 mail settings in the matching application env.
+After editing provider settings, run `prepare <stage>` and `identity <stage>`, then
+recreate that stage's API/frontend so they receive updated invitation mail settings.
+
+### GitHub Actions access
+
+Update these **repository secrets**, shared by both deployment jobs:
+
+| Secret | Oracle value |
+| --- | --- |
+| `SERVER_HOST` | `152.70.178.81` |
+| `SERVER_USER` | `ubuntu` |
+| `SSH_PRIVATE_KEY` | Contents of the local Oracle SSH private key, never a Git-tracked file |
+| `SSH_KNOWN_HOSTS` | Verified Oracle server host-key entry for `152.70.178.81` |
+
+`GITHUB_TOKEN` is automatically provided for GHCR access. Existing optional
+operational installation still uses `INVENTORY_BACKUP_PASSPHRASE`; it is not needed
+for application deployment. Repository variables `STAGING_HEALTH_URL` and
+`PRODUCTION_HEALTH_URL` remain the corresponding `https://<domain>/api/health`
+URLs. Azure login, NSG changes, Azure variables and Azure OIDC secrets are no longer
+used by CI, rollback or operations. OCI ingress must permit SSH/HTTP/HTTPS; retain
+the host's existing persistent iptables rules rather than adding another firewall.
+
+`deploy-environment.sh` serializes remote deployment, fetches the intended branch,
+checks the exact SHA, checks out that revision detached and verifies stage-specific
+DB/issuer settings. It pulls ARM64 images, waits for the stage's databases and
+Keycloak, applies file-managed identity settings, runs the EF migration bundle once, and starts
+API/frontend. Public readiness is checked before recording the healthy image tag.
+No volume is removed and no automatic migration downgrade is performed.
+Rollback only accepts ARM64 application images and preserves databases and Keycloak.
+
+For maintenance, use both the application env and the last healthy image env:
+
+```sh
+stage=staging
+cd /opt/inventory-management
+docker compose --project-directory /opt/inventory-management \
+  --env-file ".env.$stage" --env-file "/opt/inventory-runtime/$stage/images.env" \
+  -f "/opt/inventory-runtime/$stage/compose.$stage.yml" ps
+docker compose --project-directory "/opt/inventory-identity/$stage" \
+  --env-file "/opt/inventory-identity/$stage/.env.identity" \
+  -f "/opt/inventory-identity/$stage/compose.identity.server.yml" ps
+```
+
+The initial no-push validation uses locally built `oracle-preview` images; its
+source snapshot is separate from the clean server Git checkout. The next user push
+replaces preview images with immutable CI SHA tags.
+
+### Nginx and DBeaver
+
+Host Nginx uses `/etc/nginx/sites-available/inventory` and the existing enabled
+symlink. The helper preserves Certbot certificate/key/options/DH directives, backs
+up the previous site outside Git, validates `nginx -t`, reloads, and restores on
+failure. Each HTTPS hostname has its own upstream ports. `/api/` and `/identity/`
+are forwarded without stripping the path. `/api/realtime/` supports WebSocket/SSE;
+forwarded host/protocol/IP headers are overwritten at the trusted proxy. Callback,
+identity and realtime access logs are disabled to avoid recording authentication
+query parameters. Certbot retains ownership of certificate renewal.
+
+DBeaver uses SSH host `152.70.178.81`, port `22`, user `ubuntu` and the local
+Oracle private key. The DB endpoint is always `127.0.0.1`; use the port table above.
+Application passwords are `APP_DB_PASSWORD` in the matching application env;
+Keycloak passwords are `KEYCLOAK_DB_PASSWORD` in the matching identity env. SSH
+forwarding is required; do not open database ports in OCI or host firewall rules.
+
+Only README Markdown files are tracked. Secret-free Keycloak realm/provider/SMTP templates and blank environment templates are explicitly allowed. Environment-specific exports and populated files stay local. Reusable scripts required by CI and local identity setup are allowlisted; new scripts and infrastructure files are ignored until reviewed.
 
 Commit example configuration files with placeholders. Keep populated `.env` files, private keys, database dumps and generated identity exports out of Git and Docker build contexts. Changing a file today does not remove an earlier copy from Git history; any exposed credential must be revoked at its provider.
 

@@ -84,15 +84,24 @@ compose.override.yml
 !/deploy/keycloak/.env.example
 !/deploy/keycloak/development-realm.json
 !/deploy/keycloak/google-provider.template.json
+!/deploy/keycloak/server-realm.template.json
+!/deploy/keycloak/smtp.template.json
+!/deploy/keycloak/themes/
+!/deploy/keycloak/themes/**
+!/deploy/keycloak/production.env.example
+!/deploy/keycloak/staging.env.example
 
 # Scripts: explicitly allow the reusable CI/development entry points.
 /scripts/*
 !/scripts/configure-identity.mjs
-!/scripts/configure-staging-proxy.py
 !/scripts/deploy-production.sh
-!/scripts/configure-production-env.py
+!/scripts/deploy-environment.sh
+!/scripts/oracle-server.py
 !/scripts/deploy-staging.sh
 !/scripts/rollback-production.sh
 !/scripts/operations.py
 
-!scripts/configure-staging-mail.py
+
+# Public, blank Oracle runtime templates.
+!/.env.production.example
+!/.env.staging.example

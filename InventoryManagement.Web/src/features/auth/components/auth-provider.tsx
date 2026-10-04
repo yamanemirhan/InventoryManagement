@@ -12,6 +12,7 @@ import type { AuthConfig } from "../types/auth";
 import { initializeAuth, safeReturnPath, sessionEvent } from "../lib/keycloak";
 import { useI18n } from "@/lib/i18n/provider";
 import { useAppDispatch } from "@/store/hooks";
+import { useRouter } from "next/navigation";
 import { setSelectedWarehouseId } from "@/store/slices/inventory-ui-slice";
 
 type AuthState = {
@@ -27,6 +28,8 @@ type AuthContextValue = AuthState & {
   register: () => Promise<void>;
   logout: () => Promise<void>;
   account: () => Promise<void>;
+  updateProfile: () => Promise<void>;
+  changePassword: () => Promise<void>;
 };
 const Context = createContext<AuthContextValue | null>(null);
 export function AuthProvider({
@@ -37,6 +40,7 @@ export function AuthProvider({
   children: ReactNode;
 }) {
   const { locale } = useI18n();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
   const [state, setState] = useState<AuthState>({
@@ -134,7 +138,25 @@ export function AuthProvider({
       });
     },
     account: async () => {
-      await state.client?.accountManagement();
+      router.push("/account");
+    },
+    updateProfile: async () => {
+      await requireIdentity();
+      sessionStorage.setItem("inventory-return", "/account");
+      await state.client?.login({
+        locale,
+        action: "UPDATE_PROFILE",
+        redirectUri: location.origin + "/auth/callback",
+      });
+    },
+    changePassword: async () => {
+      await requireIdentity();
+      sessionStorage.setItem("inventory-return", "/account");
+      await state.client?.login({
+        locale,
+        action: "UPDATE_PASSWORD",
+        redirectUri: location.origin + "/auth/callback",
+      });
     },
   };
   return <Context.Provider value={value}>{children}</Context.Provider>;
