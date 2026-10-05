@@ -24,7 +24,9 @@ type AuthState = {
 };
 type AuthContextValue = AuthState & {
   googleEnabled: boolean;
+  demoEnabled: boolean;
   login: (google?: boolean) => Promise<void>;
+  demoLogin: () => Promise<void>;
   register: () => Promise<void>;
   logout: () => Promise<void>;
   account: () => Promise<void>;
@@ -113,6 +115,34 @@ export function AuthProvider({
   const value: AuthContextValue = {
     ...state,
     googleEnabled: config?.googleEnabled ?? false,
+    demoEnabled: config?.demoEnabled ?? false,
+    demoLogin: async () => {
+      if (!config?.demoEnabled || !state.client)
+        throw new Error("Demo sign-in is not configured.");
+      beforeLogin();
+      const authorizationUrl = await state.client.createLoginUrl({
+        locale,
+        prompt: "login",
+        redirectUri: location.origin + "/auth/callback",
+      });
+      const response = await fetch("/auth/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ authorizationUrl }),
+        credentials: "same-origin",
+        cache: "no-store",
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!response.ok) throw new Error("Demo sign-in is unavailable.");
+      const { callbackUrl } = (await response.json()) as { callbackUrl: string };
+      const callback = new URL(callbackUrl);
+      if (
+        callback.origin !== location.origin ||
+        callback.pathname !== "/auth/callback"
+      )
+        throw new Error("Invalid demo callback.");
+      location.assign(callback.href);
+    },
     login: async (google = false) => {
       await requireIdentity();
       beforeLogin();

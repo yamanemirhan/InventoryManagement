@@ -32,6 +32,11 @@ export default async function RootLayout({
           realm,
           clientId,
           googleEnabled: process.env.GOOGLE_LOGIN_ENABLED === "true",
+          demoEnabled:
+            process.env.DEMO_LOGIN_ENABLED === "true" &&
+            !!process.env.DEMO_LOGIN_EMAIL &&
+            !!process.env.DEMO_LOGIN_PASSWORD &&
+            !!process.env.APP_ORIGIN,
         }
       : null;
   return (

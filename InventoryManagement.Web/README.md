@@ -1,77 +1,49 @@
-# Inventory Management Web
+# InventoryManagement Web
 
-Next.js App Router frontend for the Inventory Management API. The package name is `inventory-management-web`.
+Next.js 16 / React 19 / TypeScript frontend for the inventory API. See the [project README](../README.md) for features, architecture and complete local setup.
 
-## Local development
+## Development
 
-Requires Node.js 20.9+, the .NET 10 API, PostgreSQL and Keycloak. First follow the [root setup instructions](../README.md#getting-started). From the repository root:
+Use Node.js 24. Start the API and local Keycloak first, then copy `.env.example` to `.env.local`:
 
-```powershell
-docker compose up -d postgres
-$env:ASPNETCORE_ENVIRONMENT = "Development"
-dotnet ef database update --project InventoryManagement.Infrastructure --startup-project InventoryManagement.Api
-dotnet run --project InventoryManagement.Api --launch-profile http
-```
-
-In a separate terminal, from `InventoryManagement.Web`:
-
-```powershell
+```sh
 npm ci
-# On first setup only; preserve an existing .env.local.
-if (!(Test-Path .env.local)) { Copy-Item .env.example .env.local }
 npm run dev
 ```
 
-The development API runs at `http://localhost:5138`; the frontend runs at `http://localhost:3000`. Configure `NEXT_PUBLIC_API_BASE_URL` in `.env.local`. An empty string uses the current origin for existing reverse-proxy deployments. Public Next.js environment variables are embedded at build time. The API must allow the frontend origin in `Cors:AllowedOrigins`.
+Open `http://localhost:3000`. `NEXT_PUBLIC_API_BASE_URL` defaults to the local API; production uses an empty value for same-origin `/api/` requests. Public Next.js variables are embedded at build time and must never contain credentials. Keycloak URL, realm and public client ID are runtime configuration, not client secrets.
 
-Windows environments without Event Log write permissions can set `Logging__EventLog__LogLevel__Default=None` for the local terminal before EF commands. The installed EF CLI should match the EF Core 10 major version.
+## State ownership
 
-## Screens and behavior
+| Concern | Implementation |
+| --- | --- |
+| Server data and cache invalidation | TanStack Query |
+| Selected warehouse and navigation UI | Redux Toolkit |
+| Forms and client validation | React Hook Form / Zod |
+| Authentication | Keycloak JS; access/refresh tokens remain in memory |
+| Company selection | Company provider; full navigation clears the previous company's state |
+| Realtime changes | SignalR notifications trigger authorized data refetches |
 
-- Product, warehouse, and supplier lists, creation forms, and details.
-- Warehouse stock selection, stock receipts, transfers, and movement history.
-- Purchase order list, paginated results, dynamic item rows, and lifecycle actions.
-- Receive an ordered purchase to add all items to warehouse stock atomically.
-- Client validation, field-level API validation, retryable read errors, empty states, and accessible loading skeletons.
-- Responsive navigation, native keyboard-accessible confirmation dialogs, and reduced-motion support.
+The API client refreshes tokens, sends Bearer authentication, `X-Company-Id` and language headers, and handles ProblemDetails/validation errors. Writes are not automatically retried. Concurrency conflicts require reloading and reviewing the current data.
 
-The workspace home links to inventory workflows. Stock overview displays quantities across all warehouses or a selected location.
+Authentication screens use the app's [Keycloak theme](../deploy/keycloak/themes/inventory). Guest pages remain usable during an identity outage; silent SSO and login availability checks are bounded. The `/account` page launches profile/password actions through the identity service.
 
-## Themes
+Optional one-click demo sign-in uses `APP_ORIGIN`, `DEMO_LOGIN_ENABLED`, `DEMO_LOGIN_EMAIL` and `DEMO_LOGIN_PASSWORD` as server runtime variables. The server completes the configured demo account's Keycloak login form; the browser retains the Authorization Code + PKCE exchange. Credentials never enter browser configuration or responses. The same-origin POST is bounded, rate limited and restricted to the configured realm/client/callback. Provision a dedicated non-admin account with access only to synthetic demo companies before enabling it.
 
-All palette values live in `src/app/globals.css`. Components use semantic tokens such as `brand`, `surface`, `ink`, `muted`, `line`, `success`, and `danger`.
+## UI and files
 
-The default forest palette and alternate `[data-theme="indigo"]` palette share the same components. The palette button in the header switches between them and persists the choice in a preference cookie. Dark mode is the default; light mode has its own semantic variables. To add a palette, add matching CSS overrides for both modes and extend `src/components/layout/preferences.tsx` and the server cookie resolver in `src/app/layout.tsx`. No feature component needs its colors rewritten.
+- Feature modules live in `src/features`; App Router pages in `src/app` compose them.
+- Shared UI uses semantic CSS tokens in `src/app/globals.css` with light/dark and forest/indigo themes.
+- English/Turkish dictionaries live in `src/lib/i18n`; date filters and activity timestamps use UTC.
+- ExcelJS handles CSV/XLSX import/export. Imports validate a preview before submission; backend validation remains authoritative.
 
-## Language support
+## Checks
 
-User-facing copy lives in `src/lib/i18n/en.ts`. `src/lib/i18n/index.ts` creates the typed dictionary and number/amount/date formatters with pluralized counts. Server components use `getI18n()`; client components use `useI18n()`. HTML language and page metadata use the same source.
-
-English is the default; Turkish is available from the header. Locale cookies, HTML language, metadata and formatters stay consistent. To add a locale, provide a dictionary satisfying `Messages` and extend `resolveLocale`, the preference selector and the backend supported cultures/messages. The API reads Accept-Language and localizes authentication, business and validation responses. Dates are explicitly shown in UTC; amounts are currency-neutral because the current backend contract has no currency field.
-
-## State and API contracts
-
-- TanStack Query owns server data. Feature-specific query key factories drive cache invalidation.
-- Redux Toolkit stores selected warehouse and mobile navigation state only.
-- React Hook Form and Zod own form state and client validation.
-- The shared API client refreshes the in-memory Keycloak token, adds Bearer authentication and Accept-Language, and supports JSON, empty/204 responses, AbortSignal, custom request headers, ProblemDetails, and field errors.
-- Stock changes invalidate warehouse stock and movement history. Purchase lifecycle changes also refresh purchase orders.
-- Writes are never automatically retried by the frontend. A concurrency conflict refreshes the affected data and asks the user to review it before retrying.
-- Product, warehouse, and supplier lookup endpoints retain list-array contracts. Purchase orders and the new history page endpoint return paginated results.
-
-## Quality checks
-
-```powershell
+```sh
 npm run lint
 npm run typecheck
 npm run build
+npm audit
 ```
 
-
-## Identity, themes, language and stock totals
-
-Keycloak provides authentication. Company roles and platform Admin access are documented in the [root README](../README.md#companies-and-authorization).
-The default appearance is dark with a forest accent; the default language is English.
-Header preferences switch dark/light, forest/indigo and English/Turkish across all application pages.
-The stock overview now includes all-warehouse totals and a warehouse selector.
-Google login needs environment-specific OAuth credentials before it can be enabled.
+As of 2026-10-05, the full audit reports [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) in `braces`, pulled in by the Next.js ESLint plugin. No patched upstream release is available. This is a development-only dependency; `npm audit --omit=dev` reports no vulnerabilities. CI checks production dependencies separately, and the full audit should still be reviewed when updating tooling. Do not use `npm audit fix --force`: its suggested Next.js ESLint downgrade is incompatible with this project's framework version.

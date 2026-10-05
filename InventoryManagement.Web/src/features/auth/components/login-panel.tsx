@@ -12,15 +12,18 @@ export function LoginPanel() {
   const { m } = useI18n();
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
-  const run = async (action: () => Promise<void>) => {
+  const [demoPending, setDemoPending] = useState(false);
+  const run = async (action: () => Promise<void>, demo = false) => {
     setError(false);
     setPending(true);
+    setDemoPending(demo);
     try {
       await action();
     } catch {
       setError(true);
     } finally {
       setPending(false);
+      setDemoPending(false);
     }
   };
   const disabled = pending || auth.status !== "anonymous";
@@ -63,6 +66,22 @@ export function LoginPanel() {
           </div>
         ) : (
           <div className="space-y-3">
+            {auth.demoEnabled && (
+              <div className="space-y-2 pb-3">
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  disabled={disabled}
+                  onClick={() => run(auth.demoLogin, true)}
+                >
+                  <Boxes className="size-4" />
+                  {demoPending ? m.auth.demoStarting : m.auth.demoLogin}
+                </Button>
+                <p className="text-center text-xs leading-5 text-muted">
+                  {m.auth.demoDescription}
+                </p>
+              </div>
+            )}
             <Button
               className="w-full"
               disabled={disabled}

@@ -3,5 +3,6 @@ export type AuthConfig = {
   realm: string;
   clientId: string;
   googleEnabled: boolean;
+  demoEnabled: boolean;
 };
 export type InventoryRole = "Admin" | "User";

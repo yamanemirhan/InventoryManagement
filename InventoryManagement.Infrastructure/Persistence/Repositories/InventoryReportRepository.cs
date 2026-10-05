@@ -16,11 +16,14 @@ public sealed class InventoryReportRepository(AppDbContext db) : IInventoryRepor
                     join s in db.Stocks.AsNoTracking() on new { ProductId = p.Id, WarehouseId = w.Id } equals new { s.ProductId, s.WarehouseId } into stocks
                     from s in stocks.DefaultIfEmpty()
                     where !p.IsDeleted && (request.WarehouseId == null ? s != null : w.Id == request.WarehouseId)
-                    select new { ProductId = p.Id, ProductName = p.Name, Sku = p.SKU, WarehouseId = w.Id, WarehouseName = w.Name, Quantity = s == null ? 0 : s.Quantity, MinimumQuantity = s == null ? 0 : s.MinimumQuantity, Version = s == null ? 0 : s.Version };
+                    select new { ProductId = p.Id, ProductName = p.Name, Sku = p.SKU, WarehouseId = w.Id, WarehouseName = w.Name, Quantity = s == null ? 0 : s.Quantity, MinimumQuantity = s == null ? 0 : s.MinimumQuantity, Version = (uint?)s.Version };
         if (!string.IsNullOrWhiteSpace(request.Search)) { var search = request.Search.Trim().ToLower(); query = query.Where(x => x.ProductName.ToLower().Contains(search) || x.Sku.ToLower().Contains(search)); }
         if (request.LowOnly) query = query.Where(x => x.MinimumQuantity > 0 && x.Quantity < x.MinimumQuantity);
         var count = await query.CountAsync(ct);
-        var rows = await query.OrderBy(x => x.ProductName).ThenBy(x => x.ProductId).ThenBy(x => x.WarehouseId).Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).Select(x => new StockReportRow(x.ProductId, x.ProductName, x.Sku, x.WarehouseId, x.WarehouseName, x.Quantity, x.MinimumQuantity, x.Version)).ToListAsync(ct);
+        var page = await query.OrderBy(x => x.ProductName).ThenBy(x => x.ProductId).ThenBy(x => x.WarehouseId).Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToListAsync(ct);
+        // PostgreSQL xmin has type xid, which cannot share a CASE/COALESCE with integer zero.
+        // Preserve NULL from the left join and use zero for absent stock after materializing the page.
+        var rows = page.Select(x => new StockReportRow(x.ProductId, x.ProductName, x.Sku, x.WarehouseId, x.WarehouseName, x.Quantity, x.MinimumQuantity, x.Version ?? 0)).ToList();
         return new(rows, count, request.Page, request.PageSize);
     }
     public async Task<PagedResult<MovementReportRow>> GetMovementReportAsync(GetMovementReportQuery request, CancellationToken ct)

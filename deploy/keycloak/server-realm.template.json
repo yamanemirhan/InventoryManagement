@@ -31,11 +31,11 @@
     "realm": [
       {
         "name": "Admin",
-        "description": "Manage inventory master data, receipts and purchasing."
+        "description": "Platform administrator: manage companies, memberships and inventory across companies."
       },
       {
         "name": "User",
-        "description": "Read inventory and transfer stock."
+        "description": "Application user: company membership and company role determine data access."
       }
     ]
   },

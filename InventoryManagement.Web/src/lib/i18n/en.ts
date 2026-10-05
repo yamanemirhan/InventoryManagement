@@ -13,6 +13,9 @@ export const en = {
     description:
       "Sign in to your workspace to manage inventory with confidence.",
     login: "Sign in with email",
+    demoLogin: "Sign in with demo account",
+    demoStarting: "Opening demo…",
+    demoDescription: "Explore the application with sample data.",
     google: "Continue with Google",
     register: "Create an account",
     logout: "Sign out",
