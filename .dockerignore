@@ -52,3 +52,8 @@ temp/
 # Local-only Compose overrides
 docker-compose.override.yml
 compose.override.yml
+
+# Only application sources belong in image build contexts.
+deploy/
+scripts/
+**/*realm*.json

@@ -1,5 +1,4 @@
 name: inventory-management-production
-
 services:
   api:
     logging:
@@ -16,33 +15,55 @@ services:
       Authentication__Audience: inventory-api
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
+      Mail__HostBase64: ${MAIL_HOST_BASE64:-}
+      Mail__PortBase64: ${MAIL_PORT_BASE64:-}
+      Mail__UsernameBase64: ${MAIL_USERNAME_BASE64:-}
+      Mail__PasswordBase64: ${MAIL_PASSWORD_BASE64:-}
+      Mail__FromBase64: ${MAIL_FROM_BASE64:-}
+      Mail__ImplicitTlsBase64: ${MAIL_IMPLICITTLS_BASE64:-}
+      Mail__AppOrigin: ${APP_ORIGIN:?Set APP_ORIGIN}
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      test:
+        - CMD
+        - curl
+        - '--fail'
+        - '--silent'
+        - http://localhost:8080/health
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     ports:
-      - "127.0.0.1:8080:8080"
+      - 127.0.0.1:8080:8080
     networks:
       - inventory_network
-
+    mem_limit: 768m
+    cpus: 1
+    depends_on:
+      app-db:
+        condition: service_healthy
+    extra_hosts:
+      - inventory-yamanemirhan.duckdns.org:host-gateway
   migrate:
     image: ${API_IMAGE_REPOSITORY:-inventory-management-api}:${IMAGE_TAG:-local}
     profiles:
       - migration
-    restart: "no"
+    restart: 'no'
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in the environment file}
     entrypoint:
       - ./efbundle
     command:
-      - --no-color
-      - --prefix-output
+      - '--no-color'
+      - '--prefix-output'
     networks:
       - inventory_network
-
+    depends_on:
+      app-db:
+        condition: service_healthy
+    mem_limit: 768m
+    cpus: 1
   frontend:
     logging:
       driver: journald
@@ -53,7 +74,7 @@ services:
       context: .
       dockerfile: InventoryManagement.Web/Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: ""
+        NEXT_PUBLIC_API_BASE_URL: ''
     restart: unless-stopped
     environment:
       KEYCLOAK_URL: ${KEYCLOAK_URL:?Set KEYCLOAK_URL}
@@ -64,10 +85,54 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3000:3000"
+      - 127.0.0.1:3000:3000
     networks:
       - inventory_network
-
+    mem_limit: 512m
+    cpus: 0.75
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - '-e'
+        - fetch('http://127.0.0.1:3000/auth/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+  app-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    shm_size: 128m
+    command:
+      - postgres
+      - '-c'
+      - shared_buffers=128MB
+      - '-c'
+      - work_mem=4MB
+      - '-c'
+      - max_connections=60
+    environment:
+      POSTGRES_DB: inventory_production
+      POSTGRES_USER: inventory_production
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:?}
+    ports:
+      - 127.0.0.1:55432:5432
+    volumes:
+      - app_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U inventory_production -d inventory_production
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - inventory_network
 networks:
   inventory_network:
     driver: bridge
+volumes:
+  app_postgres_data: {}

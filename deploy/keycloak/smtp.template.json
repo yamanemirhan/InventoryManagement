@@ -1,0 +1,11 @@
+{
+  "from": "${SMTP_FROM}",
+  "fromDisplayName": "Inventory Management",
+  "host": "${SMTP_HOST}",
+  "port": "${SMTP_PORT}",
+  "auth": "true",
+  "user": "${SMTP_USERNAME}",
+  "password": "${SMTP_PASSWORD}",
+  "starttls": "${SMTP_STARTTLS}",
+  "ssl": "${SMTP_SSL}"
+}

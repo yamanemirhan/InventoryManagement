@@ -29,7 +29,7 @@ export const tr: typeof en = {
     admin: "Yönetici",
     user: "Kullanıcı",
     googleUnavailable: "Bu ortamda Google girişi henüz yapılandırılmadı.",
-    secure: "Hesabınız Keycloak tarafından güvenle yönetilir.",
+    secure: "Hesabınız ve şirket verileriniz güvenli giriş ile korunur.",
     configuration: "Bu ortam için giriş yapılandırılmamış.",
     back: "Çalışma alanına dön",
   },

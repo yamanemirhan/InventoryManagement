@@ -29,7 +29,7 @@ export const en = {
     admin: "Administrator",
     user: "User",
     googleUnavailable: "Google sign-in is not configured in this environment.",
-    secure: "Your account is securely managed by Keycloak.",
+    secure: "Your account and company data are protected with secure sign-in.",
     configuration: "Sign-in is not configured for this environment.",
     back: "Back to workspace",
   },

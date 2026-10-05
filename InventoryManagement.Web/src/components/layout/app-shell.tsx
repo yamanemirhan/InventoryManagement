@@ -83,11 +83,13 @@ export function AppShell({
   const dispatch = useAppDispatch();
   const open = useAppSelector((s) => s.inventoryUi.sidebarOpen);
   const current =
-    nav.find((n) => n.href !== "/" && pathname.startsWith(n.href)) ?? nav[0];
+    pathname === "/account"
+      ? { href: "/account", label: m.auth.account }
+      : (nav.find((n) => n.href !== "/" && pathname.startsWith(n.href)) ?? nav[0]);
   if (auth.status !== "authenticated") {
     return (
       <div className="flex min-h-screen flex-col bg-subtle">
-        <header className="flex items-center justify-between gap-4 border-b border-line bg-surface px-5 py-5 sm:px-10">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line bg-surface px-5 py-5 sm:px-10">
           <Link
             href="/"
             className="flex items-center gap-3 font-semibold tracking-tight"

@@ -90,6 +90,10 @@ if (command === 'realm') {
     supportedLocales: ['en', 'tr'],
     defaultLocale: 'en'
   });
+  const managed = JSON.parse(fs.readFileSync(path.join(root, 'deploy/keycloak/development-realm.json'), 'utf8'));
+  for (const key of ['loginTheme', 'passwordPolicy', 'ssoSessionIdleTimeoutRememberMe', 'ssoSessionMaxLifespanRememberMe']) {
+    realmDefinition[key] = managed[key];
+  }
   const realmUpdate = await fetch(realmUrl, {method: 'PUT', headers, body: JSON.stringify(realmDefinition)});
   if (!realmUpdate.ok) throw new Error(`Realm update failed (${realmUpdate.status}).`);
 

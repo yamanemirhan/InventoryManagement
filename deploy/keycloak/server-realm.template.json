@@ -1,8 +1,8 @@
 {
-  "realm": "inventory-development",
-  "displayName": "Inventory OS · Development",
+  "realm": "inventory-${IDENTITY_ENVIRONMENT}",
+  "displayName": "Inventory Management — ${IDENTITY_ENVIRONMENT}",
   "enabled": true,
-  "sslRequired": "external",
+  "sslRequired": "all",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,
@@ -11,7 +11,7 @@
   "editUsernameAllowed": false,
   "rememberMe": true,
   "bruteForceProtected": true,
-  "verifyEmail": false,
+  "verifyEmail": true,
   "loginTheme": "inventory",
   "passwordPolicy": "length(12) and maxLength(128) and digits(1) and upperCase(1) and lowerCase(1) and notUsername(undefined) and notEmail(undefined)",
   "ssoSessionIdleTimeoutRememberMe": 604800,
@@ -46,6 +46,7 @@
     {
       "clientId": "inventory-web",
       "name": "Inventory Web",
+      "baseUrl": "${APP_ORIGIN}",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": true,
@@ -54,14 +55,14 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "http://localhost:3000/auth/callback"
+        "${APP_ORIGIN}/auth/callback"
       ],
       "webOrigins": [
-        "http://localhost:3000"
+        "${APP_ORIGIN}"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:3000/auth/login"
+        "post.logout.redirect.uris": "${APP_ORIGIN}/auth/login"
       },
       "defaultClientScopes": [
         "basic",

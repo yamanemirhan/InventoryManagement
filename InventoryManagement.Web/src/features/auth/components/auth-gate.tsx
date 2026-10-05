@@ -28,6 +28,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }
   }, [auth.status, path, router]);
   if (auth.status !== "authenticated") return <LoginPanel />;
+  if (path === "/account") return children;
   if (workspace.loading) return <p role="status">{m.auth.checking}</p>;
   if (workspace.error)
     return (
