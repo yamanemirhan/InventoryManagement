@@ -14,6 +14,9 @@ export const tr: typeof en = {
     description:
       "Envanterinizi güvenle yönetmek için çalışma alanınıza giriş yapın.",
     login: "E-posta ile giriş yap",
+    demoLogin: "Demo hesapla giriş yap",
+    demoStarting: "Demo hazırlanıyor…",
+    demoDescription: "Örnek verilerle uygulamayı hemen inceleyin.",
     google: "Google ile devam et",
     register: "Hesap oluştur",
     logout: "Çıkış yap",

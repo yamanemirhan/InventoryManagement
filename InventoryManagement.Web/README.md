@@ -28,6 +28,8 @@ The API client refreshes tokens, sends Bearer authentication, `X-Company-Id` and
 
 Authentication screens use the app's [Keycloak theme](../deploy/keycloak/themes/inventory). Guest pages remain usable during an identity outage; silent SSO and login availability checks are bounded. The `/account` page launches profile/password actions through the identity service.
 
+Optional one-click demo sign-in uses `APP_ORIGIN`, `DEMO_LOGIN_ENABLED`, `DEMO_LOGIN_EMAIL` and `DEMO_LOGIN_PASSWORD` as server runtime variables. The server completes the configured demo account's Keycloak login form; the browser retains the Authorization Code + PKCE exchange. Credentials never enter browser configuration or responses. The same-origin POST is bounded, rate limited and restricted to the configured realm/client/callback. Provision a dedicated non-admin account with access only to synthetic demo companies before enabling it.
+
 ## UI and files
 
 - Feature modules live in `src/features`; App Router pages in `src/app` compose them.

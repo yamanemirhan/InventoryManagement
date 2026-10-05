@@ -81,6 +81,12 @@ services:
       KEYCLOAK_REALM: inventory-staging
       KEYCLOAK_CLIENT_ID: inventory-web
       GOOGLE_LOGIN_ENABLED: ${GOOGLE_LOGIN_ENABLED:-false}
+      APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN}
+      DEMO_LOGIN_ENABLED: ${DEMO_LOGIN_ENABLED:-false}
+      DEMO_LOGIN_EMAIL: ${DEMO_LOGIN_EMAIL:-}
+      DEMO_LOGIN_PASSWORD: ${DEMO_LOGIN_PASSWORD:-}
+    extra_hosts:
+      - staging-inventory-yamanemirhan.duckdns.org:host-gateway
     depends_on:
       api:
         condition: service_healthy

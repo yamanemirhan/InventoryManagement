@@ -18,6 +18,8 @@ The public hostnames and loopback ports in the templates are configuration, not 
 
 `MAIL_*_BASE64` values are transport encoding, not encryption. Bootstrap derives them from the identity SMTP settings; protect them exactly like plaintext passwords.
 
+For the optional public demo button, set `DEMO_LOGIN_ENABLED=true`, `DEMO_LOGIN_EMAIL` and `DEMO_LOGIN_PASSWORD` in that environment's private application env. Provision the account first, with no platform administrator role and memberships only in synthetic demo companies. The frontend receives the credentials as server runtime variables; only an enabled flag reaches browser configuration. Each environment enables its own demo independently; an account in production does not exist automatically in staging.
+
 ## File-managed Keycloak
 
 - `development-realm.json`: localhost realm; email verification is disabled for local development only.
