@@ -117,7 +117,7 @@ services:
     environment:
       POSTGRES_DB: inventory_production
       POSTGRES_USER: inventory_production
-      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:?}
     ports:
       - 127.0.0.1:55432:5432
     volumes:
