@@ -13,6 +13,10 @@ services:
     environment:
       Authentication__Authority: ${KEYCLOAK_AUTHORITY:?Set KEYCLOAK_AUTHORITY}
       Authentication__Audience: inventory-api
+      AiChat__Enabled: ${AI_CHAT_ENABLED:-false}
+      AiChat__FreeTierConfirmed: ${AI_CHAT_FREE_TIER_CONFIRMED:-false}
+      AiChat__ApiKey: ${AI_CHAT_API_KEY:-}
+      AiChat__Model: ${AI_CHAT_MODEL:-gemini-3.8-flash}
       Observability__OtlpEndpoint: ${OBSERVABILITY_OTLP_ENDPOINT:-}
       Observability__Environment: ${OBSERVABILITY_ENVIRONMENT:-production}
       Observability__PrometheusUrl: ${OBSERVABILITY_PROMETHEUS_URL:-}

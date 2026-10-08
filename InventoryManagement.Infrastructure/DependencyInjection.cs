@@ -20,6 +20,12 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString)
             .AddInterceptors(new InventoryManagement.Infrastructure.Monitoring.DatabaseTraceInterceptor()));
         services.AddHttpClient("monitoring", client => { client.Timeout = TimeSpan.FromSeconds(8); client.DefaultRequestHeaders.Accept.ParseAdd("application/json"); });
+        services.Configure<InventoryManagement.Infrastructure.Assistant.AssistantOptions>(configuration.GetSection("AiChat"));
+        services.AddSingleton<InventoryManagement.Infrastructure.Assistant.AssistantBudget>();
+        services.AddScoped<InventoryManagement.Application.Assistant.IChatAssistant, InventoryManagement.Infrastructure.Assistant.GeminiChatAssistant>();
+        services.AddHttpClient("assistant", client => client.Timeout = TimeSpan.FromSeconds(35))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
+            .RemoveAllLoggers();
         services.AddScoped<InventoryManagement.Application.Monitoring.IMonitoringReader, InventoryManagement.Infrastructure.Monitoring.MonitoringReader>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());

@@ -6,6 +6,7 @@ import {
   useCompanyText,
 } from "@/features/companies/company-provider";
 import { Preferences } from "./preferences";
+import { AssistantWidget } from "@/features/assistant/assistant-widget";
 import { NotificationCenter } from "@/features/realtime/realtime-provider";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { AuthGate } from "@/features/auth/components/auth-gate";
@@ -265,6 +266,7 @@ export function AppShell({
         >
           <AuthGate>{children}</AuthGate>
         </main>
+        <AssistantWidget />
       </div>
     </div>
   );

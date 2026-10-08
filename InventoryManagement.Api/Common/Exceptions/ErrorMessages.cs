@@ -4,6 +4,13 @@ internal static class ErrorMessages
 {
  private static readonly IReadOnlyDictionary<string,string> Turkish = new Dictionary<string,string>
  {
+  ["The assistant's free quota is temporarily exhausted. Try again later."] = "Asistanın ücretsiz kotası geçici olarak doldu. Daha sonra tekrar deneyin.",
+  ["The assistant is busy. Try again shortly."] = "Asistan meşgul. Kısa bir süre sonra tekrar deneyin.",
+  ["The assistant is not enabled yet."] = "Asistan henüz etkinleştirilmedi.",
+  ["The assistant took too long. Try again shortly."] = "Asistan zamanında yanıt veremedi. Kısa bir süre sonra tekrar deneyin.",
+  ["The assistant could not answer this message. Rephrase it without sensitive information."] = "Asistan bu mesaja yanıt veremedi. Hassas bilgi içermeden yeniden yazın.",
+  ["The AI provider is unavailable. Try again later."] = "AI sağlayıcısı şu an kullanılamıyor. Daha sonra tekrar deneyin.",
+  ["Accept external AI processing before sending."] = "Göndermeden önce dış AI işleme koşulunu kabul edin.",
   ["Document not found."] = "Bilgi kaynağı bulunamadı.",
   ["Invalid document status."] = "Geçersiz bilgi kaynağı durumu.",
   ["This document has changed. Reload before saving."] = "Bu kaynak başka bir işlemde değiştirildi. Düzenlemeden çıkıp güncel içeriği yükleyin.",

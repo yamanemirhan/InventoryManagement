@@ -15,6 +15,7 @@ A multi-company inventory and purchasing application built with ASP.NET Core and
 - Email/password and optional Google sign-in, verified email invitations, custom account screens and SignalR updates.
 - Turkish/English UI, responsive layouts and light/dark themes.
 - Admin-only server/container dashboard, OpenTelemetry logs/traces/metrics and safe staging diagnostics.
+- Invo: a floating Turkish/English AI assistant with optional Gemini integration, explicit data-sharing consent and bounded free-tier usage.
 
 ## Technology
 
@@ -121,10 +122,22 @@ Owners/Managers can add a manufacturer barcode when creating or editing a produc
 
 Supported readers: QR, EAN-8/13, UPC-A/E, Code 128/39, ITF and Data Matrix. Camera accuracy depends on lighting, focus and code size. The reader and lookup API can be reused for a future mobile app.
 
+## Invo assistant
+
+Invo appears at the bottom right after sign-in and company selection. It explains inventory workflows and provides quick navigation. Conversation text stays in this tab's memory; new chat, reload, company switch and sign-out clear it. No conversation database or browser storage is used. The assistant cannot read live company records or execute stock/business actions. This is workflow assistance, not RAG.
+
+AI replies are **disabled by default**. Set `AI_CHAT_ENABLED=true`, `AI_CHAT_FREE_TIER_CONFIRMED=true` and `AI_CHAT_API_KEY` in the selected environment's protected server env file; Compose forwards these only to the API. Default model: `gemini-3.8-flash` (also allows `gemini-3.7-flash`). For local API execution, use equivalent `AiChat__Enabled`, `AiChat__FreeTierConfirmed`, `AiChat__ApiKey` environment variables. A private `.local/ai-chat.env` helper is not loaded automatically or uploaded by deployment. Never put keys in `NEXT_PUBLIC_*`, frontend code or Git.
+
+Create a separate, **billing-disabled** project/key in [Google AI Studio](https://aistudio.google.com/apikey). Confirm its current [free-tier pricing](https://ai.google.dev/gemini-api/docs/pricing) and project quota before enabling. The application cannot inspect/enforce a key's Google billing plan; `FreeTierConfirmed` is an operator acknowledgement. Free service has limits and no production availability guarantee. There is no automatic retry, paid model fallback, grounding, agent or tool usage. Do not enable Google billing to bypass quota errors.
+
+Messages are sent to Google only after explicit consent. Google's free tier may use them to improve its products; do not send sensitive/personal/business data. Provider retention is governed by Google's terms, separately from this application's lack of storage. Responses are displayed as escaped plain text. API access requires a current company membership; client history accepts only alternating user/assistant messages and cannot supply system instructions. Request/response sizes and inference duration are bounded; prompts, replies and API keys are excluded from application logs/traces.
+
+Initial limits per API instance/environment: 4 requests/user/minute, 20/user/UTC day, 40 total/UTC day and 2 concurrent calls. Failed/cancelled provider attempts count; daily in-memory counters reset on restart. Provider limits remain authoritative and separate staging/production keys/projects are recommended. Metrics: `inventory.assistant.requests` (outcome), `inventory.assistant.duration` and `inventory.assistant.tokens` (input/output/thinking); no message text, user/company labels or secrets are attached.
+
 ## Scope and limitations
 
 - Realtime and invitation dispatch currently assume one API instance per environment. Scaling requires coordinated workers and a shared SignalR transport; delivery is not exactly-once.
-- Knowledge resources prepare data for future RAG. No chatbot, embedding pipeline or vector database is included.
+- Knowledge resources prepare data for future RAG. Invo currently provides workflow help; no live-data retrieval, embedding pipeline or vector database is included.
 - WhatsApp/SMS automation is deferred: production delivery requires provider setup and potentially paid messages. No paid provider is activated.
 - Backup/restore tooling is included, but installation, off-host storage and recovery drills must be configured and verified by the operator. Deployment alone does not enable them.
 - Secrets and dependency checks reduce risk; they are not a penetration-test or compliance certification.
