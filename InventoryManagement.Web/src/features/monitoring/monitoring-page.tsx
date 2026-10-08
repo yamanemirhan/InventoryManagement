@@ -27,8 +27,12 @@ function Sparkline({ points, label }: { points: Point[]; label: string }) {
 }
 function formatted(value: number | null | undefined, unit = "") {
   if (value == null) return "—";
-  if (unit === "bytes") return `${(value / 1048576).toFixed(0)} MB`;
-  if (unit === "bytes/s") return `${(value / 1024).toFixed(1)} KB/s`;
+  if (unit === "bytes" || unit === "bytes/s") {
+    const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+    const index = value > 0 ? Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1) : 0;
+    return `${(value / 1024 ** Math.max(0, index)).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${units[Math.max(0, index)]}${unit === "bytes/s" ? "/s" : ""}`;
+  }
+  if (unit === "uptime") return `${Math.floor(value / 86400)}d ${Math.floor(value % 86400 / 3600)}h ${Math.floor(value % 3600 / 60)}m`;
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`;
 }
 
@@ -47,6 +51,12 @@ export function MonitoringPage() {
   if (!allowed) return <p role="alert">{t("Bu ekran yalnızca platform yöneticisine açıktır.", "This screen is for platform administrators only.")}</p>;
   const data = query.data;
   const value = (name: string) => data?.metrics.find(m => m.name === name);
+  const capacities: Record<string, { used: string; total: string; available?: string; unit: string }> = {
+    cpu: { used: "cpuUsed", total: "cpuTotal", unit: "vCPU" },
+    memory: { used: "memoryUsed", total: "memoryTotal", available: "memoryAvailable", unit: "bytes" },
+    disk: { used: "diskUsed", total: "diskTotal", available: "diskAvailable", unit: "bytes" },
+    swap: { used: "swapUsed", total: "swapTotal", unit: "bytes" },
+  };
   const cards = [
     ["cpu", "CPU", "%"], ["memory", t("RAM", "Memory"), "%"], ["disk", t("Disk", "Disk"), "%"],
     ["requests", t("İstek / saniye", "Requests / second"), "/s"], ["errors", t("5xx hata oranı", "5xx error rate"), "%"],
@@ -54,6 +64,7 @@ export function MonitoringPage() {
     ["emailPending", t("Bekleyen e-posta", "Pending emails"), ""], ["emailRetried", t("E-posta tekrarı", "Retried emails"), ""],
     ["lowStock", t("Düşük stok satırı", "Low-stock rows"), ""], ["networkReceive", t("Ağ indirme", "Network receive"), "bytes/s"],
     ["networkTransmit", t("Ağ yükleme", "Network transmit"), "bytes/s"],
+    ["swap", "Swap", "%"], ["uptime", t("Çalışma süresi", "Uptime"), "uptime"],
   ];
   return <div className="space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-semibold">{t("Sistem izleme", "System monitoring")}</h1>
@@ -69,10 +80,23 @@ export function MonitoringPage() {
         {data.alerts.length === 0 ? <p className="text-sm text-muted">{t("Şu anda aktif uyarı yok.", "No active alerts.")}</p> : data.alerts.map((a, i) => <p key={`${a.name}-${i}`} role="status" className={a.severity === "critical" ? "text-danger" : "text-brand"}>{a.name} · {a.state} · {a.summary}</p>)}
         {value("businessCollector")?.value !== 1 && <p className="text-danger">{t("İş ölçümleri güncel olmayabilir. Toplayıcı sağlığını kontrol edin.", "Business metrics may be stale. Check collector health.")}</p>}
       </section>
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([name, label, unit]) => <article key={name} className="panel p-5"><h2 className="text-sm text-muted">{label}</h2>
-        <p className="mt-2 text-2xl font-semibold">{formatted(value(name)?.value, unit)}</p><Sparkline points={data.series.find(s => s.name === name)?.points ?? []} label={`${label} · 15 min`} /></article>)}</section>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([name, label, unit]) => {
+        const capacity = capacities[name];
+        const noSwap = name === "swap" && value("swapTotal")?.value === 0;
+        return <article key={name} className="panel p-5"><h2 className="text-sm text-muted">{label}</h2>
+          <p className="mt-2 text-2xl font-semibold">{noSwap ? t("Yok", "None") : formatted(value(name)?.value, unit)}</p>
+          {capacity && !noSwap && <div className="mt-2 space-y-1 text-sm">
+            <p>{formatted(value(capacity.used)?.value, capacity.unit)} / {formatted(value(capacity.total)?.value, capacity.unit)}</p>
+            <p className="text-xs text-muted">{t("Kullanılan / toplam", "Used / total")}</p>
+            {capacity.available && <p className="text-xs text-muted">{t("Kullanılabilir", "Available")}: {formatted(value(capacity.available)?.value, capacity.unit)}</p>}
+          </div>}
+          <Sparkline points={data.series.find(s => s.name === name)?.points ?? []} label={`${label} · 15 min`} /></article>;
+      })}</section>
       <p className="text-xs text-muted">{t("Kaynaklar sunucunun toplamını; iş ölçümleri bu ortamın toplamını gösterir. — veri henüz yok demektir, sıfır demek değildir. p95: isteklerin %95’inin tamamlandığı süre.", "Resources cover the whole server; business metrics cover this environment. — means no data yet, not zero. p95 is the duration within which 95% of requests finish.")}</p>
-      <section className="panel overflow-x-auto p-5"><h2 className="mb-4 font-semibold">{t("Konteynerler", "Containers")}</h2><table className="w-full text-left text-sm"><thead><tr><th>{t("Servis", "Service")}</th><th>CPU</th><th>RAM</th><th>{t("Limit", "Limit")}</th><th>{t("Sağlık", "Health")}</th></tr></thead><tbody>{data.containers.map(c => <tr key={c.name} className="border-t border-line"><td className="py-3 pr-4">{c.name}</td><td>{formatted(c.cpuPercent, "%")}</td><td>{formatted(c.memoryBytes, "bytes")}</td><td>{formatted(c.memoryLimitBytes, "bytes")}</td><td>{c.healthy ? "✓" : t("Kontrol et", "Inspect")}</td></tr>)}</tbody></table></section>
+      <p className="text-xs text-muted">{t("1 GiB = 1024 MiB. RAM kullanımı, toplamdan kullanılabilir bellek çıkarılarak hesaplanır; geri kazanılabilir önbellek kullanılabilir sayılır. Disk / bölümünü gösterir; ayrılmış alan kullanılabilir sayılmaz. Sunucu CPU’su tüm vCPU’ların 5 dakikalık ortalamasıdır; kullanılan vCPU, eşdeğer işlemci yüküdür.", "1 GiB = 1024 MiB. Memory usage subtracts available memory, including reclaimable cache. Disk covers the / filesystem; reserved space is unavailable. Host CPU is the 5-minute average across all vCPUs; used vCPUs represent equivalent processor load.")}</p>
+      <section className="panel overflow-x-auto p-5"><h2 className="mb-4 font-semibold">{t("Konteynerler", "Containers")}</h2><table className="w-full text-left text-sm"><thead><tr><th>{t("Servis", "Service")}</th><th>CPU</th><th>RAM</th><th>{t("Limit", "Limit")}</th><th>RAM %</th><th>{t("Sağlık", "Health")}</th></tr></thead><tbody>{data.containers.map(c => <tr key={c.name} className="border-t border-line"><td className="py-3 pr-4">{c.name}</td><td className="pr-4">{formatted(c.cpuPercent, "%")}<span className="block text-xs text-muted">{formatted(c.cpuPercent == null ? null : c.cpuPercent / 100, "vCPU")}</span></td><td className="pr-4">{formatted(c.memoryBytes, "bytes")}</td><td className="pr-4">{formatted(c.memoryLimitBytes, "bytes")}</td><td className="pr-4">{formatted(c.memoryBytes != null && c.memoryLimitBytes != null && c.memoryLimitBytes > 0 ? 100 * c.memoryBytes / c.memoryLimitBytes : null, "%")}</td><td>{c.healthy ? "✓" : t("Kontrol et", "Inspect")}</td></tr>)}</tbody></table>
+        <p className="mt-3 text-xs text-muted">{t("Konteyner CPU’sunda %100 = 1 vCPU; birden fazla çekirdek kullanıldığında %100’ü aşabilir. RAM yüzdesi konteynerin bellek limitine göredir.", "For container CPU, 100% = 1 vCPU; multiple cores can exceed 100%. Memory percentage is relative to the container memory limit.")}</p>
+      </section>
     </>}
     <section className="panel space-y-4 p-5"><h2 className="font-semibold">{t("Loglar ve istek izleri", "Logs and traces")}</h2>
       <div className="flex flex-wrap gap-3"><select aria-label="Log level" className="field" value={level} onChange={e => setLevel(e.target.value)}><option value="all">{t("Tüm seviyeler", "All levels")}</option><option value="warning">Warning</option><option value="error">Error</option></select>
