@@ -1,0 +1,63 @@
+groups:
+  - name: inventory-system
+    rules:
+      - alert: HostCpuHigh
+        expr: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 85
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: 'Server CPU exceeded 85% for 10 minutes'}
+      - alert: HostMemoryHigh
+        expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 90
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: 'Available RAM below 10% for 5 minutes'}
+      - alert: HostDiskLow
+        expr: node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} < 0.15
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: 'Root disk has less than 15% space available'}
+      - alert: ApplicationErrors
+        expr: sum by(environment)(rate(inventory_http_requests_total{status=~"5.."}[5m])) / clamp_min(sum by(environment)(rate(inventory_http_requests_total[5m])), 0.001) > 0.05 and sum by(environment)(increase(inventory_http_requests_total{status=~"5.."}[5m])) >= 5
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: '{{ $labels.environment }} API: 5xx rate above 5% with at least 5 errors'}
+      - alert: ApplicationLatency
+        expr: histogram_quantile(0.95, sum by(environment,le)(rate(inventory_http_duration_seconds_bucket[5m]))) > 2
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: '{{ $labels.environment }} API: p95 latency exceeded 2 seconds'}
+      - alert: RealtimeQueueStalled
+        expr: inventory_outbox_pending > 0 and inventory_outbox_oldest_seconds > 120
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: '{{ $labels.environment }}: realtime events have been waiting for more than 2 minutes'}
+      - alert: InvitationDeliveryRetry
+        expr: inventory_email_retried > 0
+        for: 15m
+        labels: {severity: warning}
+        annotations: {summary: '{{ $labels.environment }}: invitation delivery has retries; inspect SMTP logs'}
+      - alert: BusinessMetricsUnavailable
+        expr: inventory_business_collector_healthy == 0
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: 'Business metrics collector cannot query its dependencies'}
+      - alert: ContainerUnhealthy
+        expr: inventory_container_healthy == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: '{{ $labels.container }} is unhealthy, stopped or missing'}
+      - alert: HostCollectorStale
+        expr: time() - inventory_host_collection_timestamp_seconds > 120
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: 'Host/container metrics collector stopped updating'}
+      - alert: TelemetryScrapeUnavailable
+        expr: up{job=~"application|host"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: 'A telemetry endpoint cannot be scraped'}
+      - alert: StagingTelemetryMissing
+        expr: absent(inventory_business_collector_updated_seconds{environment="staging"}) or time() - inventory_business_collector_updated_seconds{environment="staging"} > 120
+        for: 2m
+        labels: {severity: warning, environment: staging}
+        annotations: {summary: 'Staging API telemetry is absent or stale'}

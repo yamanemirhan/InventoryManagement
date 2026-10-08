@@ -12,6 +12,7 @@ A multi-company inventory and purchasing application built with ASP.NET Core and
 - Filtered reports, CSV/XLSX import/export, activity history and company knowledge resources.
 - Email/password and optional Google sign-in, verified email invitations, custom account screens and SignalR updates.
 - Turkish/English UI, responsive layouts and light/dark themes.
+- Admin-only server/container dashboard, OpenTelemetry logs/traces/metrics and safe staging diagnostics.
 
 ## Technology
 
@@ -24,7 +25,7 @@ A multi-company inventory and purchasing application built with ASP.NET Core and
 | Identity | Keycloak 26, OpenID Connect, Authorization Code + PKCE, JWT, Google OAuth |
 | Background work | SignalR, .NET hosted services, PostgreSQL outbox, MailKit/SMTP, ExcelJS |
 | Hosting and delivery | Oracle Cloud Ubuntu ARM64, Docker Compose, Nginx, HTTPS/Certbot, DuckDNS, GitHub Actions, GHCR |
-| Operations | Health checks, structured logs, request IDs, rate limits, Gitleaks and GitGuardian |
+| Operations | OpenTelemetry, Prometheus, Grafana, Loki, Tempo, health checks, request IDs, rate limits, Gitleaks and GitGuardian |
 
 Oracle Cloud hosts the services; PostgreSQL stores the data. Redis and RabbitMQ are not required by the current implementation.
 
@@ -101,6 +102,8 @@ flowchart LR
 Each environment has separate application and identity services, PostgreSQL volumes and credentials. Nginx exposes HTTPS; service/database ports bind to loopback. Deployment selects the exact commit, serializes server changes and records the healthy image version after readiness checks. Rollback changes application images; it does not downgrade the database.
 
 Server/Google/SMTP values stay in protected env files and GitHub Actions Secrets. Only blank env files, secret-free templates and reusable deployment scripts are tracked. See the [configuration guide](deploy/keycloak/README.md) before deploying your own instance; the supplied server helper targets this project's domains and layout.
+
+See [system monitoring](deploy/observability/README.md) for admin access, retention and diagnostics.
 
 ## Scope and limitations
 

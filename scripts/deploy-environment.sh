@@ -24,6 +24,13 @@ git fetch --prune origin "+refs/heads/${branch}:refs/remotes/origin/${branch}"
 # A detached exact revision avoids branch switching/merge drift on the shared VM.
 git checkout --detach "$DEPLOY_SHA"
 sudo -n python3 scripts/oracle-server.py prepare "$DEPLOY_STAGE"
+docker network inspect inventory-observability > /dev/null 2>&1 || docker network create inventory-observability > /dev/null
+if [[ -f /opt/inventory-runtime/observability/.env ]]; then
+  sudo -n python3 scripts/observability.py install
+  docker compose --project-directory /opt/inventory-runtime/observability \
+    --env-file /opt/inventory-runtime/observability/.env \
+    -f /opt/inventory-runtime/observability/compose.observability.yml up -d --no-build
+fi
 sudo -n python3 scripts/oracle-server.py nginx
 
 export IMAGE_TAG="$DEPLOY_SHA" API_IMAGE_REPOSITORY FRONTEND_IMAGE_REPOSITORY

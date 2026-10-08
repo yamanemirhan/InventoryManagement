@@ -17,7 +17,10 @@ public static class DependencyInjection
 
         // scoped lifetime is used for DbContext to ensure that a new instance is created for each request,
         // which is the recommended practice for web applications.
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString)
+            .AddInterceptors(new InventoryManagement.Infrastructure.Monitoring.DatabaseTraceInterceptor()));
+        services.AddHttpClient("monitoring", client => { client.Timeout = TimeSpan.FromSeconds(8); client.DefaultRequestHeaders.Accept.ParseAdd("application/json"); });
+        services.AddScoped<InventoryManagement.Application.Monitoring.IMonitoringReader, InventoryManagement.Infrastructure.Monitoring.MonitoringReader>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<ICatalogRepository, CatalogRepository>();

@@ -91,6 +91,25 @@ compose.override.yml
 # Infrastructure: keep only reusable, secret-free local identity templates.
 /deploy/*
 !/deploy/keycloak/
+!/deploy/observability/
+/deploy/observability/*
+!/deploy/observability/.env.example
+!/deploy/observability/README.md
+!/deploy/observability/*.yml
+!/deploy/observability/grafana-client.template.json
+!/deploy/observability/grafana/
+/deploy/observability/grafana/*
+!/deploy/observability/grafana/dashboards/
+/deploy/observability/grafana/dashboards/*
+!/deploy/observability/grafana/dashboards/system.json
+!/deploy/observability/grafana/provisioning/
+/deploy/observability/grafana/provisioning/*
+!/deploy/observability/grafana/provisioning/dashboards/
+!/deploy/observability/grafana/provisioning/datasources/
+/deploy/observability/grafana/provisioning/dashboards/*
+/deploy/observability/grafana/provisioning/datasources/*
+!/deploy/observability/grafana/provisioning/dashboards/providers.yml
+!/deploy/observability/grafana/provisioning/datasources/sources.yml
 /deploy/keycloak/*
 !/deploy/keycloak/.env.example
 !/deploy/keycloak/development-realm.json
@@ -112,6 +131,7 @@ compose.override.yml
 !/scripts/deploy-staging.sh
 !/scripts/rollback-production.sh
 !/scripts/operations.py
+!/scripts/observability.py
 
 
 # Public, blank Oracle runtime templates.

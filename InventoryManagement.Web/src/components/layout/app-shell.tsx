@@ -79,13 +79,15 @@ export function AppShell({
       label: t("Platform yönetimi", "Platform administration"),
       icon: PanelTop,
     });
+  if (auth.admin)
+    nav.push({ href: "/admin/monitoring", label: t("Sistem izleme", "System monitoring"), icon: History });
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const open = useAppSelector((s) => s.inventoryUi.sidebarOpen);
   const current =
     pathname === "/account"
       ? { href: "/account", label: m.auth.account }
-      : (nav.find((n) => n.href !== "/" && pathname.startsWith(n.href)) ?? nav[0]);
+      : (nav.filter((n) => n.href !== "/" && pathname.startsWith(n.href)).sort((a, b) => b.href.length - a.href.length)[0] ?? nav[0]);
   if (auth.status !== "authenticated") {
     return (
       <div className="flex min-h-screen flex-col bg-subtle">
