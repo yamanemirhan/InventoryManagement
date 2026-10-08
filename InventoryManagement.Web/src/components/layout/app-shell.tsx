@@ -63,6 +63,8 @@ export function AppShell({
     icon: BookOpen,
   });
   if (company && ["Owner", "Manager"].includes(company.role))
+    nav.push({ href: "/imports", label: t("Toplu veri aktarımı", "Bulk data import"), icon: ArrowUpRight });
+  if (company && ["Owner", "Manager"].includes(company.role))
     nav.push({
       href: "/activity",
       label: t("İşlem geçmişi", "Activity history"),

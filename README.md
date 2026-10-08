@@ -10,6 +10,7 @@ A multi-company inventory and purchasing application built with ASP.NET Core and
 - Products, warehouses, suppliers, stock transfers, physical counts and minimum-stock warnings.
 - Purchase orders with partial receipts, supplier returns and concurrent-update protection.
 - Filtered reports, CSV/XLSX import/export, activity history and company knowledge resources.
+- Bulk products, warehouses, suppliers, opening stock and draft purchases: templates, row previews, downloadable errors and atomic, company-scoped imports with duplicate-upload protection.
 - Email/password and optional Google sign-in, verified email invitations, custom account screens and SignalR updates.
 - Turkish/English UI, responsive layouts and light/dark themes.
 - Admin-only server/container dashboard, OpenTelemetry logs/traces/metrics and safe staging diagnostics.
@@ -105,10 +106,17 @@ Server/Google/SMTP values stay in protected env files and GitHub Actions Secrets
 
 See [system monitoring](deploy/observability/README.md) for admin access, retention and diagnostics.
 
+## Bulk import
+
+Owners/Managers use **Bulk data import** (`/imports`). Download a CSV/XLSX template, replace the example row and upload up to 1000 rows / 1 MB. Preview checks all rows before saving; any error rejects the whole batch. Download the full row/column error report to correct the file.
+
+Import products, warehouses and suppliers first. Stock and purchase templates reference company SKUs, unique warehouse names and supplier emails; a reference workbook is available. Opening stock imports never overwrite existing stock. Purchase rows sharing `OrderKey` create one draft (up to 100 items); this key only groups the current file. Prices use a dot and at most two decimals. Stock changes, history and import receipts commit together; repeat uploads of identical contents do not create duplicates.
+
 ## Scope and limitations
 
 - Realtime and invitation dispatch currently assume one API instance per environment. Scaling requires coordinated workers and a shared SignalR transport; delivery is not exactly-once.
 - Knowledge resources prepare data for future RAG. No chatbot, embedding pipeline or vector database is included.
+- WhatsApp/SMS automation is deferred: production delivery requires provider setup and potentially paid messages. No paid provider is activated.
 - Backup/restore tooling is included, but installation, off-host storage and recovery drills must be configured and verified by the operator. Deployment alone does not enable them.
 - Secrets and dependency checks reduce risk; they are not a penetration-test or compliance certification.
 

@@ -1,3 +1,4 @@
+import { ImportShortcut } from "@/features/operations/import-shortcut";
 import { AdminOnly } from "@/features/auth/components/access";
 import { ArrowRightLeft, Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -34,6 +35,7 @@ export default async function Page() {
           </div>
         }
       />
+      <ImportShortcut />
       <WarehouseStockViewer />
     </>
   );
