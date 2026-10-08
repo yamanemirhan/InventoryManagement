@@ -7,6 +7,7 @@ using InventoryManagement.Application.Common.Exceptions;
 using InventoryManagement.Application.Common.Interfaces;
 using InventoryManagement.Application.Imports;
 using InventoryManagement.Domain.Entities;
+using InventoryManagement.Domain.Common;
 using InventoryManagement.Domain.Enums;
 using InventoryManagement.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +25,8 @@ public sealed class BulkImportRepository(AppDbContext db, ICurrentUser user) : I
         static string QuantityText(string? value) => Integer(value, out var parsed) ? parsed.ToString(CultureInfo.InvariantCulture) : Text(value);
         static string PriceText(string? value) => Price(value, out var parsed) ? parsed.ToString("G29", CultureInfo.InvariantCulture) : Text(value);
         var values = rows.Select(r => kind switch {
-            "products" => new[] { Text(r.Name), Text(r.Sku) },
+            // Retain existing receipt hashes for files without a barcode column.
+            "products" => string.IsNullOrWhiteSpace(r.Barcode) ? new[] { Text(r.Name), Text(r.Sku) } : new[] { Text(r.Name), Text(r.Sku), Text(r.Barcode) },
             "warehouses" => new[] { Text(r.Name), Text(r.Location) },
             "suppliers" => new[] { Text(r.Name), Text(r.Email).ToLowerInvariant() },
             "stocks" => new[] { Text(r.Sku), Text(r.WarehouseName), QuantityText(r.Quantity), QuantityText(r.MinimumQuantity) },
@@ -47,13 +49,19 @@ public sealed class BulkImportRepository(AppDbContext db, ICurrentUser user) : I
         var skus = rows.Select(r => Text(r.Sku)).Distinct().ToArray();
         var names = rows.Select(r => kind == "warehouses" ? Text(r.Name) : Text(r.WarehouseName)).Distinct().ToArray();
         var emails = rows.Select(r => Text(kind == "suppliers" ? r.Email : r.SupplierEmail).ToLowerInvariant()).Distinct().ToArray();
-        if (kind is "products" or "stocks" or "purchase-orders")
+        if (kind == "products")
+        {
+            var codes = rows.SelectMany(r => new[] { Text(r.Sku), Text(r.Barcode) }).Where(x => x.Length > 0).SelectMany(BarcodeRules.Variants).Distinct().ToArray();
+            refs = refs with { Products = await db.Products.Where(x => codes.Contains(x.SKU) || (x.Barcode != null && codes.Contains(x.Barcode))).ToDictionaryAsync(x => x.SKU, ct) };
+        }
+        if (kind is "stocks" or "purchase-orders")
             refs = refs with { Products = await db.Products.Where(x => skus.Contains(x.SKU)).ToDictionaryAsync(x => x.SKU, ct) };
         if (kind is "warehouses" or "stocks" or "purchase-orders")
             refs = refs with { Warehouses = (await db.Warehouses.Where(x => names.Contains(x.Name)).ToListAsync(ct)).GroupBy(x => x.Name).ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.Ordinal) };
         if (kind is "suppliers" or "purchase-orders")
             refs = refs with { Suppliers = await db.Suppliers.Where(x => emails.Contains(x.Email)).ToDictionaryAsync(x => x.Email, ct) };
         var existingStocks = new HashSet<(Guid, Guid)>();
+        var existingCodes = refs.Products.Values.SelectMany(x => new[] { x.SKU, x.Barcode ?? "" }).Where(x => x.Length > 0).SelectMany(BarcodeRules.Variants).ToHashSet(StringComparer.Ordinal);
         if (kind == "stocks")
         {
             var productIds = refs.Products.Values.Select(x => x.Id).ToArray(); var warehouseIds = refs.Warehouses.Values.SelectMany(x => x).Select(x => x.Id).ToArray();
@@ -65,7 +73,11 @@ public sealed class BulkImportRepository(AppDbContext db, ICurrentUser user) : I
         for (var i = 0; i < rows.Count; i++)
         {
             var r = rows[i];
-            if (kind == "products" && refs.Products.ContainsKey(Text(r.Sku))) Error(i, "Sku", "SKU already exists, including archived products.");
+            if (kind == "products")
+            {
+                if (BarcodeRules.Variants(Text(r.Sku)).Any(existingCodes.Contains)) Error(i, "Sku", "SKU or barcode already exists, including archived products.");
+                if (!string.IsNullOrWhiteSpace(r.Barcode) && BarcodeRules.Variants(Text(r.Barcode)).Any(existingCodes.Contains)) Error(i, "Barcode", "Barcode or SKU already exists, including archived products.");
+            }
             if (kind == "warehouses" && refs.Warehouses.ContainsKey(Text(r.Name))) Error(i, "Name", "Warehouse name already exists.");
             if (kind == "suppliers" && refs.Suppliers.ContainsKey(Text(r.Email).ToLowerInvariant())) Error(i, "Email", "Supplier email already exists.");
             if (kind is "stocks" or "purchase-orders")
@@ -91,7 +103,7 @@ public sealed class BulkImportRepository(AppDbContext db, ICurrentUser user) : I
             var records = rows.Count;
             foreach (var r in rows)
             {
-                if (kind == "products") db.Products.Add(new Product(Text(r.Name), Text(r.Sku)));
+                if (kind == "products") db.Products.Add(new Product(Text(r.Name), Text(r.Sku), Text(r.Barcode)));
                 if (kind == "warehouses") db.Warehouses.Add(new Warehouse(Text(r.Name), Text(r.Location)));
                 if (kind == "suppliers") db.Suppliers.Add(new Supplier(Text(r.Name), Text(r.Email)));
                 if (kind == "stocks")

@@ -42,7 +42,7 @@ export async function exportRows(
     c.width = 24;
   });
   sheet.columns.forEach((c, i) => {
-    if (["Sku", "OrderKey", "Email", "SupplierEmail", "WarehouseName"].includes(headers[i])) c.numFmt = "@";
+    if (["Sku", "Barcode", "OrderKey", "Email", "SupplierEmail", "WarehouseName"].includes(headers[i])) c.numFmt = "@";
   });
   sheet.autoFilter = {
     from: { row: 1, column: 1 },
@@ -122,7 +122,7 @@ function checkArchive(buffer: ArrayBuffer) {
       view.getUint16(p + 32, true);
   }
 }
-export async function readImportRows(file: File, expectedHeaders: string[]): Promise<Record<string, string>[]> {
+export async function readImportRows(file: File, expectedHeaders: string[], optionalHeaders: string[] = []): Promise<Record<string, string>[]> {
   if (file.size > 1024 * 1024) throw new Error("Maximum 1 MB / En fazla 1 MB");
   let rows: string[][];
   if (file.name.toLowerCase().endsWith(".csv"))
@@ -153,7 +153,7 @@ export async function readImportRows(file: File, expectedHeaders: string[]): Pro
     });
   } else throw new Error("Choose CSV or XLSX / CSV veya XLSX seçin");
   const header = rows.shift()?.map((v) => v.trim().toLowerCase()) ?? [];
-  if (new Set(header).size !== header.length || expectedHeaders.some(h => !header.includes(h.toLowerCase())) || header.some(h => !expectedHeaders.some(e => e.toLowerCase() === h)))
+  if (new Set(header).size !== header.length || expectedHeaders.some(h => !optionalHeaders.includes(h) && !header.includes(h.toLowerCase())) || header.some(h => !expectedHeaders.some(e => e.toLowerCase() === h)))
     throw new Error(`Required columns / Gerekli sütunlar: ${expectedHeaders.join(", ")}`);
   if (rows.length < 1 || rows.length > 1000)
     throw new Error("Provide 1-1000 rows / 1-1000 satır gerekli");

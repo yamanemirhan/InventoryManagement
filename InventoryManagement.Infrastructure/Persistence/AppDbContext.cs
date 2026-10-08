@@ -121,6 +121,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
         {
             if (postgres.ConstraintName == "IX_Stocks_ProductId_WarehouseId")
                 throw new ConcurrencyException("Stock was created by another request. Refresh and try again.", ex);
+            if (postgres.ConstraintName == "IX_Products_CompanyId_Barcode")
+                throw new InvalidOperationException("Barcode or SKU already belongs to another product.", ex);
             throw new InvalidOperationException("A record with the same SKU or email already exists.", ex);
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation })

@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IProductImportRepository, ProductImportRepository>();
         services.AddScoped<InventoryManagement.Application.Imports.IBulkImportRepository, BulkImportRepository>();
         services.AddScoped<IProductReadRepository, ProductReadRepository>();
+        services.AddScoped<InventoryManagement.Application.Products.Codes.IProductCodeRepository, ProductCodeRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IStockRepository, StockRepository>();
         services.AddScoped<IStockCountRepository, StockCountRepository>();

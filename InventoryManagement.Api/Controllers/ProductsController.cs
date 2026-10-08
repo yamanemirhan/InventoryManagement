@@ -14,6 +14,17 @@ namespace InventoryManagement.Api.Controllers;
 [Route("api/products")]
 public class ProductsController(ISender sender) : Controller
 {
+    [HttpGet("lookup")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Lookup([FromQuery] string code, CancellationToken ct)
+    {
+        var product = await sender.Send(new InventoryManagement.Application.Products.Queries.GetProductByCode.GetProductByCodeQuery(code), ct);
+        return product is null ? NotFound() : Ok(product);
+    }
+    [HttpPut("{id:guid}/barcode")]
+    [Authorize(Policy = InventoryPolicies.Manage)]
+    public async Task<IActionResult> Barcode(Guid id, InventoryManagement.Application.Products.Commands.SetProductBarcode.SetProductBarcodeCommand command, CancellationToken ct)
+    { await sender.Send(command with { Id = id }, ct); return NoContent(); }
     [HttpPost("import/preview")]
     [Authorize(Policy = InventoryPolicies.Manage)]
     [RequestSizeLimit(524288)]

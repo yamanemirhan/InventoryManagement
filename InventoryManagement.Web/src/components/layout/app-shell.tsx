@@ -23,6 +23,7 @@ import {
   PanelTop,
   BookOpen,
   History,
+  ScanLine,
 } from "lucide-react";
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ export function AppShell({
     { href: "/products", label: m.nav.products, icon: Package },
     { href: "/warehouses", label: m.nav.warehouses, icon: Warehouse },
     { href: "/stocks", label: m.nav.stocks, icon: Boxes },
+    { href: "/scan", label: t("QR / barkod okut", "Scan QR / barcode"), icon: ScanLine },
     { href: "/suppliers", label: m.nav.suppliers, icon: UsersRound },
     { href: "/purchase-orders", label: m.nav.orders, icon: ClipboardList },
   ];

@@ -11,6 +11,7 @@ A multi-company inventory and purchasing application built with ASP.NET Core and
 - Purchase orders with partial receipts, supplier returns and concurrent-update protection.
 - Filtered reports, CSV/XLSX import/export, activity history and company knowledge resources.
 - Bulk products, warehouses, suppliers, opening stock and draft purchases: templates, row previews, downloadable errors and atomic, company-scoped imports with duplicate-upload protection.
+- QR/barcode product lookup by camera, USB reader or image; stock-form selection and printable/downloadable product labels.
 - Email/password and optional Google sign-in, verified email invitations, custom account screens and SignalR updates.
 - Turkish/English UI, responsive layouts and light/dark themes.
 - Admin-only server/container dashboard, OpenTelemetry logs/traces/metrics and safe staging diagnostics.
@@ -111,6 +112,14 @@ See [system monitoring](deploy/observability/README.md) for admin access, retent
 Owners/Managers use **Bulk data import** (`/imports`). Download a CSV/XLSX template, replace the example row and upload up to 1000 rows / 1 MB. Preview checks all rows before saving; any error rejects the whole batch. Download the full row/column error report to correct the file.
 
 Import products, warehouses and suppliers first. Stock and purchase templates reference company SKUs, unique warehouse names and supplier emails; a reference workbook is available. Opening stock imports never overwrite existing stock. Purchase rows sharing `OrderKey` create one draft (up to 100 items); this key only groups the current file. Prices use a dot and at most two decimals. Stock changes, history and import receipts commit together; repeat uploads of identical contents do not create duplicates.
+
+## QR and barcode workflow
+
+Use **Scan QR / barcode** (`/scan`), the product list, or stock receipt/transfer and purchase-order forms. Focus the code field before using a USB keyboard reader (Enter suffix). Camera scanning requires HTTPS or localhost and explicit browser permission; PNG/JPG/WebP images are decoded locally (up to 5 MB / 12 MP). No image is uploaded and no stock changes happen merely by scanning.
+
+Owners/Managers can add a manufacturer barcode when creating or editing a product, or import the optional text-formatted `Barcode` column. Leading zeros are significant; UPC-A and zero-prefixed EAN-13 codes are treated as equivalent. Download/print QR and Code 128 labels from product details. QR labels contain a versioned company/product ID and survive SKU changes; foreign-company labels are rejected. Raw barcode/SKU lookup uses the selected company. Ambiguous codes are rejected rather than choosing a product. Scanned URLs are never opened automatically.
+
+Supported readers: QR, EAN-8/13, UPC-A/E, Code 128/39, ITF and Data Matrix. Camera accuracy depends on lighting, focus and code size. The reader and lookup API can be reused for a future mobile app.
 
 ## Scope and limitations
 

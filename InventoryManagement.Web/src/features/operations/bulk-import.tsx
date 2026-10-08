@@ -8,7 +8,7 @@ import { exportRows, readImportRows } from "./files";
 
 export type ImportKind = "products" | "warehouses" | "suppliers" | "stocks" | "purchase-orders";
 const definitions: Record<ImportKind, { tr: string; en: string; headers: string[]; example: string[][] }> = {
-  products: { tr: "Ürünler", en: "Products", headers: ["Name", "Sku"], example: [["Example product", "EXAMPLE-001"]] },
+  products: { tr: "Ürünler", en: "Products", headers: ["Name", "Sku", "Barcode"], example: [["Example product", "EXAMPLE-001", "0012345678905"]] },
   warehouses: { tr: "Depolar", en: "Warehouses", headers: ["Name", "Location"], example: [["Main warehouse", "Istanbul"]] },
   suppliers: { tr: "Tedarikçiler", en: "Suppliers", headers: ["Name", "Email"], example: [["Example supplier", "supplier@example.com"]] },
   stocks: { tr: "Başlangıç stokları", en: "Opening stock", headers: ["Sku", "WarehouseName", "Quantity", "MinimumQuantity"], example: [["EXAMPLE-001", "Main warehouse", "10", "3"]] },
@@ -37,7 +37,7 @@ export function BulkImport({ initialKind = "products", selectable = true }: { in
     reset(); if (!file || !company) return;
     const companyId = company.id;
     await run(async () => {
-      const parsed = await readImportRows(file, definition.headers);
+      const parsed = await readImportRows(file, definition.headers, kind === "products" ? ["Barcode"] : []);
       // JSON (not the uploaded file) reaches the API, so also bound its UTF-8 body size.
       if (new TextEncoder().encode(JSON.stringify({ kind, rows: parsed })).length > 1_048_576) throw new Error(t("İstek sınırı 1 MB. Dosyayı bölün.", "Request limit is 1 MB. Split the file."));
       const result = await apiClient<Preview>("/api/imports/preview", { method: "POST", body: { kind, rows: parsed } });
@@ -60,6 +60,7 @@ export function BulkImport({ initialKind = "products", selectable = true }: { in
     <p className="text-sm text-muted">{t("Önce ürün/depo/tedarikçileri, sonra stok ve siparişleri aktarın. Mevcut kayıtlar güncellenmez. Herhangi bir hata varsa dosyanın tamamı reddedilir. Aynı içerikli dosya tekrar eklenmez.", "Import products/warehouses/suppliers first, then stock and orders. Existing records are not updated. Any error rejects the entire file. A file with the same contents is not imported twice.")}</p>
     {selectable && <label className="block text-sm">{t("Aktarım türü", "Import type")}<select className="field mt-2" value={kind} disabled={busy} onChange={e => { reset(); setKind(e.target.value as ImportKind); }}>{Object.entries(definitions).map(([k, d]) => <option key={k} value={k}>{t(d.tr, d.en)}</option>)}</select></label>}
     {!selectable && <p className="font-medium">{t(definition.tr, definition.en)}</p>}
+    {kind === "products" && <p className="text-sm text-muted">{t("Barcode isteğe bağlıdır. Baştaki sıfırları korumak için metin biçimini kullanın. Eski Name/Sku şablonları da kabul edilir.", "Barcode is optional. Keep it as text to preserve leading zeros. Existing Name/Sku templates are also accepted.")}</p>}
     {kind === "stocks" && <p className="text-sm text-muted">{t("SKU ve depo adı bu şirkette bulunmalıdır. Yalnızca henüz stoğu olmayan ürün/depo eşleşmelerine başlangıç miktarı eklenir. Mevcut stok için sayım veya stok hareketi kullanın. MinimumQuantity = minimum stok.", "SKU and warehouse name must exist in this company. Opening quantities apply only to product/warehouse pairs with no stock record. Use counts or movements for existing stock. MinimumQuantity is the stock threshold.")}</p>}
     {kind === "purchase-orders" && <p className="text-sm text-muted">{t("Aynı OrderKey satırları tek taslak sipariş oluşturur (en fazla 100 ürün). SupplierEmail, WarehouseName ve Sku bu şirkette bulunmalıdır. OrderKey yalnızca dosyadaki gruplama içindir. UnitPrice için nokta kullanın: 25.50. Stok otomatik artırılmaz.", "Rows sharing OrderKey create one draft order (up to 100 products). SupplierEmail, WarehouseName and Sku must exist in this company. OrderKey groups rows within this file. Use a dot for UnitPrice: 25.50. Stock is not automatically increased.")}</p>}
     <div className="flex flex-wrap gap-2">{(["xlsx", "csv"] as const).map(format => <Button key={format} variant="secondary" disabled={busy} onClick={() => void run(() => exportRows(`${kind}-template`, definition.headers, definition.example, format))}>{t("Şablon indir", "Download template")} · {format.toUpperCase()}</Button>)}

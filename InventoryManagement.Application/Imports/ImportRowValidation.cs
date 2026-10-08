@@ -1,4 +1,5 @@
 using System.Text.Json;
+using InventoryManagement.Domain.Common;
 using static InventoryManagement.Application.Imports.ImportRules;
 namespace InventoryManagement.Application.Imports;
 
@@ -7,6 +8,7 @@ public static class ImportRowValidation
     public static List<ImportError> Check(string kind, IReadOnlyList<ImportRow> rows)
     {
         var errors = new List<ImportError>(); var seen = new HashSet<string>(StringComparer.Ordinal);
+        var codes = new Dictionary<string, int>(StringComparer.Ordinal);
         void Error(int i, string column, string message) => errors.Add(new(i + 2, column, message));
         void Required(int i, string column, string? text, int max)
         { if (string.IsNullOrWhiteSpace(text) || Text(text).Length > max) Error(i, column, $"Required, maximum {max} characters."); }
@@ -16,6 +18,13 @@ public static class ImportRowValidation
             if (kind is "products" or "warehouses" or "suppliers") Required(i, "Name", r.Name, kind == "warehouses" ? 150 : 200);
             if (kind == "warehouses") Required(i, "Location", r.Location, 300);
             if (kind is "products" or "stocks" or "purchase-orders") Required(i, "Sku", r.Sku, 100);
+            if (kind == "products")
+            {
+                if (!BarcodeRules.IsValid(Text(r.Barcode))) Error(i, "Barcode", "Use at most 100 printable ASCII characters without spaces or the inventory: prefix.");
+                foreach (var code in new[] { Text(r.Sku), Text(r.Barcode) }.Where(x => x.Length > 0).SelectMany(BarcodeRules.Variants).Distinct())
+                    if (codes.TryGetValue(code, out var previous) && previous != i) Error(i, "Sku / Barcode", "Code belongs to another product row in this file.");
+                    else codes[code] = i;
+            }
             if (kind == "suppliers" && (!ValidEmail(r.Email) || Text(r.Email).Length > 320)) Error(i, "Email", "A valid email address is required.");
             if (kind is "stocks" or "purchase-orders")
             {

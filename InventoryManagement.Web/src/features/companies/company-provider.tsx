@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useCallback, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { apiClient } from "@/lib/api/client";
@@ -77,7 +77,7 @@ export function useCompany() {
 }
 export function useCompanyText() {
   const { locale } = useI18n();
-  return (tr: string, en: string) => (locale === "tr" ? tr : en);
+  return useCallback((tr: string, en: string) => (locale === "tr" ? tr : en), [locale]);
 }
 export function CompanySwitcher() {
   const { session, company, switchCompany } = useCompany();
