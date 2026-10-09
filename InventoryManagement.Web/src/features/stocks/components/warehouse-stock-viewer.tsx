@@ -9,6 +9,7 @@ import { setSelectedWarehouseId } from "@/store/slices/inventory-ui-slice";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useI18n } from "@/lib/i18n/provider";
 import { getErrorMessage } from "@/lib/utils";
+import { ProductScanner } from "@/features/scanning/product-scanner";
 export function WarehouseStockViewer({ id }: { id?: string }) {
   const { m, formatNumber, locale } = useI18n();
 
@@ -17,17 +18,19 @@ export function WarehouseStockViewer({ id }: { id?: string }) {
   const dispatch = useAppDispatch();
   const warehouseId = id ?? selected;
   const [search, setSearch] = useState("");
+  const [scannedId, setScannedId] = useState<string | null>(null);
   const warehouseQuery = useWarehouseStock(warehouseId);
   const overviewQuery = useStockOverview(!warehouseId);
   const query = warehouseId ? warehouseQuery : overviewQuery;
   const items =
     query.data?.filter((item) =>
-      `${item.productName} ${item.sku}`
+      (!scannedId || item.productId === scannedId) && `${item.productName} ${item.sku}`
         .toLocaleLowerCase(locale)
         .includes(search.toLocaleLowerCase(locale)),
     ) ?? [];
   return (
     <div className="space-y-5">
+      <ProductScanner onSelect={product => { setScannedId(product.id); setSearch(product.sku); }} />
       {!id && (
         <div className="panel flex flex-wrap items-end gap-4 p-5">
           <div className="w-full max-w-sm">
@@ -63,7 +66,7 @@ export function WarehouseStockViewer({ id }: { id?: string }) {
           aria-label={m.stockOverview.search}
           placeholder={m.stockOverview.search}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setScannedId(null); }}
         />
         <Button
           variant="secondary"

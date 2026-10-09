@@ -23,6 +23,8 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.HasIndex(x => new { x.CompanyId, x.SKU })
             .IsUnique();
+        builder.Property(x => x.Barcode).HasMaxLength(100);
+        builder.HasIndex(x => new { x.CompanyId, x.Barcode }).IsUnique().HasFilter("\"Barcode\" IS NOT NULL");
 
         builder.Property(x => x.IsDeleted)
             .IsRequired();

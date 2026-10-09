@@ -28,7 +28,7 @@ export function ProductsList() {
       />
     );
   const rows = query.data.filter((p) =>
-    (p.name + " " + p.sku).toLowerCase().includes(search.toLowerCase()),
+    (p.name + " " + p.sku + " " + (p.barcode ?? "")).toLowerCase().includes(search.toLowerCase()),
   );
   return (
     <div className="panel overflow-hidden">

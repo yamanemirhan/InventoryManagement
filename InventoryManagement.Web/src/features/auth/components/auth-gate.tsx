@@ -37,9 +37,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
         <Button onClick={workspace.retry}>{t("Tekrar dene", "Retry")}</Button>
       </div>
     );
-  if (path === "/admin" && !auth.admin)
+  if (path.startsWith("/admin") && !auth.admin)
     return <p role="alert">{m.auth.forbidden}</p>;
-  if (path === "/companies" || path === "/admin") return children;
+  if (path === "/companies" || path.startsWith("/admin")) return children;
   if (!workspace.company) return <CompanyPage />;
   const canRead = !!workspace.company;
   const canManage = ["Owner", "Manager"].includes(workspace.company.role);
@@ -50,7 +50,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
     /\/(products|warehouses|suppliers|purchase-orders)\/new$/.test(path) ||
     path === "/stocks/increase" ||
     path === "/knowledge/new" ||
-    path === "/activity";
+    path === "/activity" ||
+    path === "/imports";
   if (
     !canRead ||
     (adminPage && !canManage) ||

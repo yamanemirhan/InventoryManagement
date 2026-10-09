@@ -1,0 +1,97 @@
+name: inventory-observability
+x-defaults: &defaults
+  restart: unless-stopped
+  networks: [monitoring]
+  security_opt: [no-new-privileges:true]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: '3'}
+services:
+  collector:
+    <<: *defaults
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    command: ['--config=/etc/otel/config.yml']
+    volumes: ['./deploy/observability/collector.yml:/etc/otel/config.yml:ro']
+    mem_limit: 256m
+    cpus: 0.5
+    ports: ['127.0.0.1:14317:4317']
+  prometheus:
+    <<: *defaults
+    image: prom/prometheus:v3.15.0
+    command: ['--config.file=/etc/prometheus/prometheus.yml', '--storage.tsdb.path=/prometheus', '--storage.tsdb.retention.time=15d', '--storage.tsdb.retention.size=3GB']
+    volumes: ['./deploy/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro', './deploy/observability/alerts.yml:/etc/prometheus/alerts.yml:ro', 'metrics:/prometheus']
+    mem_limit: 512m
+    cpus: 0.5
+    ports: ['127.0.0.1:19090:9090']
+  loki:
+    <<: *defaults
+    image: grafana/loki:3.7.8
+    command: ['-config.file=/etc/loki/config.yml']
+    volumes: ['./deploy/observability/loki.yml:/etc/loki/config.yml:ro', 'logs:/loki']
+    mem_limit: 384m
+    cpus: 0.5
+    ports: ['127.0.0.1:13100:3100']
+  tempo:
+    <<: *defaults
+    image: grafana/tempo:2.9.5
+    command: ['-config.file=/etc/tempo/config.yml']
+    volumes: ['./deploy/observability/tempo.yml:/etc/tempo/config.yml:ro', 'traces:/var/tempo']
+    mem_limit: 384m
+    cpus: 0.5
+    ports: ['127.0.0.1:13200:3200']
+  node-exporter:
+    <<: *defaults
+    image: prom/node-exporter:v1.12.1
+    command: ['--path.procfs=/host/proc', '--path.sysfs=/host/sys', '--path.rootfs=/host/root', '--collector.textfile.directory=/textfile', '--no-collector.wifi', '--no-collector.hwmon']
+    volumes: ['/proc:/host/proc:ro', '/sys:/host/sys:ro', '/:/host/root:ro,rslave', './textfile:/textfile:ro']
+    mem_limit: 64m
+    cpus: 0.25
+  grafana:
+    <<: *defaults
+    image: grafana/grafana:13.2.3
+    environment:
+      GF_SERVER_ROOT_URL: ${GRAFANA_ORIGIN:?Set GRAFANA_ORIGIN}/observability/
+      GF_SERVER_SERVE_FROM_SUB_PATH: 'true'
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+      GF_AUTH_BASIC_ENABLED: 'false'
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?Set GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?}
+      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY:?}
+      GF_SECURITY_COOKIE_SECURE: 'true'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_AUTH_GENERIC_OAUTH_ENABLED: 'true'
+      GF_AUTH_GENERIC_OAUTH_NAME: Inventory Admin
+      GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: 'true'
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: inventory-observability
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${GRAFANA_OAUTH_SECRET:?}
+      GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email roles
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: ${GRAFANA_AUTHORITY:?Set GRAFANA_AUTHORITY}/protocol/openid-connect/auth
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: ${GRAFANA_AUTHORITY:?Set GRAFANA_AUTHORITY}/protocol/openid-connect/token
+      GF_AUTH_GENERIC_OAUTH_API_URL: ${GRAFANA_AUTHORITY:?Set GRAFANA_AUTHORITY}/protocol/openid-connect/userinfo
+      GF_AUTH_GENERIC_OAUTH_USE_PKCE: 'true'
+      GF_AUTH_GENERIC_OAUTH_VALIDATE_ID_TOKEN: 'true'
+      GF_AUTH_GENERIC_OAUTH_JWK_SET_URL: ${GRAFANA_AUTHORITY:?Set GRAFANA_AUTHORITY}/protocol/openid-connect/certs
+      GF_AUTH_GENERIC_OAUTH_USE_REFRESH_TOKEN: 'true'
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(realm_access.roles[*], 'Admin') && 'Admin' || ''"
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT: 'true'
+      GF_AUTH_GENERIC_OAUTH_GROUPS_ATTRIBUTE_PATH: realm_access.roles
+      GF_AUTH_GENERIC_OAUTH_ALLOWED_GROUPS: Admin
+      GF_AUTH_GENERIC_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN: 'false'
+      GF_AUTH_GENERIC_OAUTH_SKIP_ORG_ROLE_SYNC: 'false'
+    extra_hosts: ['inventory-yamanemirhan.duckdns.org:host-gateway']
+    volumes: ['grafana:/var/lib/grafana', './deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro', './deploy/observability/grafana/dashboards:/etc/grafana/dashboards:ro']
+    mem_limit: 256m
+    cpus: 0.5
+    ports: ['127.0.0.1:13010:3000']
+networks:
+  monitoring:
+    name: inventory-observability
+    external: true
+volumes:
+  metrics: {}
+  logs: {}
+  traces: {}
+  grafana: {}

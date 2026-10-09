@@ -13,6 +13,16 @@ services:
     environment:
       Authentication__Authority: ${KEYCLOAK_AUTHORITY:?Set KEYCLOAK_AUTHORITY}
       Authentication__Audience: inventory-api
+      AiChat__Enabled: ${AI_CHAT_ENABLED:-false}
+      AiChat__FreeTierConfirmed: ${AI_CHAT_FREE_TIER_CONFIRMED:-false}
+      AiChat__ApiKey: ${AI_CHAT_API_KEY:-}
+      AiChat__Model: ${AI_CHAT_MODEL:-gemini-3.8-flash}
+      Observability__OtlpEndpoint: ${OBSERVABILITY_OTLP_ENDPOINT:-}
+      Observability__Environment: ${OBSERVABILITY_ENVIRONMENT:-staging}
+      Observability__PrometheusUrl: ${OBSERVABILITY_PROMETHEUS_URL:-}
+      Observability__LokiUrl: ${OBSERVABILITY_LOKI_URL:-}
+      Observability__TempoUrl: ${OBSERVABILITY_TEMPO_URL:-}
+      Observability__DiagnosticsEnabled: ${OBSERVABILITY_DIAGNOSTICS_ENABLED:-false}
       Mail__HostBase64: ${MAIL_HOST_BASE64:-}
       Mail__PortBase64: ${MAIL_PORT_BASE64:-}
       Mail__UsernameBase64: ${MAIL_USERNAME_BASE64:-}
@@ -37,6 +47,7 @@ services:
       - 127.0.0.1:8081:8080
     networks:
       - inventory_network
+      - monitoring
     mem_limit: 768m
     cpus: 1
     depends_on:
@@ -138,6 +149,9 @@ services:
     networks:
       - inventory_network
 networks:
+  monitoring:
+    name: inventory-observability
+    external: true
   inventory_network:
     driver: bridge
 volumes:

@@ -17,7 +17,16 @@ public static class DependencyInjection
 
         // scoped lifetime is used for DbContext to ensure that a new instance is created for each request,
         // which is the recommended practice for web applications.
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString)
+            .AddInterceptors(new InventoryManagement.Infrastructure.Monitoring.DatabaseTraceInterceptor()));
+        services.AddHttpClient("monitoring", client => { client.Timeout = TimeSpan.FromSeconds(8); client.DefaultRequestHeaders.Accept.ParseAdd("application/json"); });
+        services.Configure<InventoryManagement.Infrastructure.Assistant.AssistantOptions>(configuration.GetSection("AiChat"));
+        services.AddSingleton<InventoryManagement.Infrastructure.Assistant.AssistantBudget>();
+        services.AddScoped<InventoryManagement.Application.Assistant.IChatAssistant, InventoryManagement.Infrastructure.Assistant.GeminiChatAssistant>();
+        services.AddHttpClient("assistant", client => client.Timeout = TimeSpan.FromSeconds(35))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
+            .RemoveAllLoggers();
+        services.AddScoped<InventoryManagement.Application.Monitoring.IMonitoringReader, InventoryManagement.Infrastructure.Monitoring.MonitoringReader>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<ICatalogRepository, CatalogRepository>();
@@ -31,7 +40,9 @@ public static class DependencyInjection
         services.AddScoped<ICompanyReadRepository, CompanyReadRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IProductImportRepository, ProductImportRepository>();
+        services.AddScoped<InventoryManagement.Application.Imports.IBulkImportRepository, BulkImportRepository>();
         services.AddScoped<IProductReadRepository, ProductReadRepository>();
+        services.AddScoped<InventoryManagement.Application.Products.Codes.IProductCodeRepository, ProductCodeRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IStockRepository, StockRepository>();
         services.AddScoped<IStockCountRepository, StockCountRepository>();

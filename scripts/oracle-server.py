@@ -350,6 +350,20 @@ map $http_upgrade $inventory_connection_upgrade {
     }
 '''
         config += f"    location /api/ {{ proxy_pass http://127.0.0.1:{api}; }}\n"
+        if stage == "production" and (RUNTIME / "observability/.env").exists():
+            # Grafana performs its own strict Keycloak Admin-role check; raw stores stay private.
+            config += '''    location = /observability { return 308 /observability/; }
+    location ^~ /observability/ {
+        proxy_pass http://127.0.0.1:13010;
+        access_log off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $inventory_connection_upgrade;
+    }
+'''
         config += f"    location = /auth/callback {{ proxy_pass http://127.0.0.1:{front}; access_log off; }}\n"
         config += f"    location / {{ proxy_pass http://127.0.0.1:{front}; }}\n}}\n"
         config += f"\nserver {{\n    listen 80;\n    server_name {domain};\n    return 301 https://$host$request_uri;\n}}\n"

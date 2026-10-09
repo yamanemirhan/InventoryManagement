@@ -7,8 +7,12 @@ import { ErrorState, LoadingState } from "@/components/ui/states";
 import { LinkButton } from "@/components/ui/link-button";
 import { useI18n } from "@/lib/i18n/provider";
 import { useProduct } from "../hooks/use-products";
+import { ProductLabel } from "@/features/scanning/product-label";
+import { BarcodeEditor } from "@/features/scanning/barcode-editor";
+import { useCompanyText } from "@/features/companies/company-provider";
 export function ProductDetail({ id }: { id: string }) {
   const { m } = useI18n();
+  const t = useCompanyText();
 
   const query = useProduct(id);
   if (query.isPending) return <LoadingState />;
@@ -25,6 +29,7 @@ export function ProductDetail({ id }: { id: string }) {
         {[
           [m.common.name, query.data.name],
           [m.common.sku, query.data.sku],
+          [t("Üretici barkodu", "Manufacturer barcode"), query.data.barcode || "—"],
           [m.common.id, query.data.id],
         ].map(([label, value]) => (
           <div key={label}>
@@ -48,6 +53,8 @@ export function ProductDetail({ id }: { id: string }) {
           />
         </AdminOnly>
       </div>
+      <AdminOnly><BarcodeEditor key={id} id={id} initial={query.data.barcode} /></AdminOnly>
+      <ProductLabel key={`${id}-${query.data.barcode ?? ""}-${query.data.sku}`} product={query.data} />
     </Card>
   );
 }

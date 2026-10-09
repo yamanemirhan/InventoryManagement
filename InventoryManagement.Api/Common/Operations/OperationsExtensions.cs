@@ -13,6 +13,9 @@ public static class OperationsExtensions
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy("assistant", http => RateLimitPartition.GetFixedWindowLimiter(
+                http.User.FindFirstValue("sub") ?? "anonymous-assistant", _ => new()
+                { PermitLimit = 4, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(http =>
             {
                 if (http.Request.Path == "/health" || http.Request.Path == "/api/health")

@@ -1,0 +1,33 @@
+receivers:
+  otlp:
+    protocols:
+      grpc: {endpoint: '0.0.0.0:4317'}
+processors:
+  memory_limiter: {check_interval: 1s, limit_mib: 180, spike_limit_mib: 40}
+  transform/environment:
+    metric_statements:
+      - context: datapoint
+        statements: ['set(attributes["environment"], resource.attributes["deployment.environment.name"])']
+  batch: {timeout: 5s, send_batch_size: 256, send_batch_max_size: 512}
+exporters:
+  prometheus:
+    endpoint: '0.0.0.0:9464'
+    enable_open_metrics: true
+    metric_expiration: 60s
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    sending_queue: {queue_size: 256}
+    retry_on_failure: {max_elapsed_time: 60s}
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls: {insecure: true}
+    sending_queue: {queue_size: 256}
+    retry_on_failure: {max_elapsed_time: 60s}
+extensions:
+  health_check: {endpoint: '0.0.0.0:13133'}
+service:
+  extensions: [health_check]
+  pipelines:
+    traces: {receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlp/tempo]}
+    metrics: {receivers: [otlp], processors: [memory_limiter, transform/environment, batch], exporters: [prometheus]}
+    logs: {receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlphttp/loki]}

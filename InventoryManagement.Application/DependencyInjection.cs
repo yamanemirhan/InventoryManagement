@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<InventoryManagement.Application.Companies.Common.CompanyAccess>();
 
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(InventoryManagement.Application.Common.Telemetry.TelemetryBehavior<,>));
 
         return services;
     }

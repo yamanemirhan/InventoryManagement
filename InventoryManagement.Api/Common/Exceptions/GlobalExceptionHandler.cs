@@ -4,6 +4,7 @@ using InventoryManagement.Application.Common.Exceptions;
 using InventoryManagement.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using InventoryManagement.Application.Assistant;
 
 namespace InventoryManagement.Api.Common.Exceptions;
 
@@ -12,10 +13,28 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         // Do not serialize exception messages: database/identity errors may contain private values.
-        if (exception is not (ValidationException or ForbiddenException or KeyNotFoundException or DomainException or ConcurrencyException or InvalidOperationException))
+        if (exception is not (ValidationException or ForbiddenException or KeyNotFoundException or DomainException or ConcurrencyException or InvalidOperationException or AssistantException))
             logger.LogError("Unhandled {ExceptionType}; TraceId {TraceId}; Stack {StackTrace}",
                 exception.GetType().Name, httpContext.TraceIdentifier, exception.StackTrace);
 
+        if (exception is AssistantException assistant)
+        {
+            var status = assistant.Code is "assistant_quota" or "assistant_busy" ? 429 : assistant.Code == "assistant_blocked" ? 422 : 503;
+            if (assistant.RetryAfterSeconds > 0) httpContext.Response.Headers.RetryAfter = assistant.RetryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var message = assistant.Code switch
+            {
+                "assistant_quota" => "The assistant's free quota is temporarily exhausted. Try again later.",
+                "assistant_busy" => "The assistant is busy. Try again shortly.",
+                "assistant_unavailable" => "The assistant is not enabled yet.",
+                "assistant_timeout" => "The assistant took too long. Try again shortly.",
+                "assistant_blocked" => "The assistant could not answer this message. Rephrase it without sensitive information.",
+                _ => "The AI provider is unavailable. Try again later."
+            };
+            httpContext.Response.StatusCode = status;
+            await httpContext.Response.WriteAsJsonAsync(new ProblemDetails { Status = status, Title = "Invo",
+                Detail = ErrorMessages.Localize(message), Extensions = { ["code"] = assistant.Code, ["traceId"] = httpContext.TraceIdentifier } }, cancellationToken);
+            return true;
+        }
         if (exception is ValidationException validationException)
         {
             // group validation errors by property name and return them in the response

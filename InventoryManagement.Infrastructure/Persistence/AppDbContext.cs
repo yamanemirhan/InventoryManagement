@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
 {
     public Guid CurrentCompanyId => companyContext?.CompanyId ?? Guid.Empty;
     public DbSet<KnowledgeDocument> KnowledgeDocuments => Set<KnowledgeDocument>();
+    public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
     public DbSet<ActivityEntry> ActivityEntries => Set<ActivityEntry>();
     public DbSet<CompanyInvitation> CompanyInvitations => Set<CompanyInvitation>();
     public DbSet<Company> Companies => Set<Company>();
@@ -48,6 +49,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
         modelBuilder.Entity<CompanyMember>().HasOne<Company>().WithMany().HasForeignKey(x => x.CompanyId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CompanyMember>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
         ConfigureCompany<KnowledgeDocument>(modelBuilder);
+        ConfigureCompany<ImportBatch>(modelBuilder);
         modelBuilder.Entity<ActivityEntry>().HasQueryFilter(x => x.CompanyId == CurrentCompanyId);
         ConfigureCompany<Product>(modelBuilder);
         ConfigureCompany<Warehouse>(modelBuilder);
@@ -119,6 +121,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICompanyContex
         {
             if (postgres.ConstraintName == "IX_Stocks_ProductId_WarehouseId")
                 throw new ConcurrencyException("Stock was created by another request. Refresh and try again.", ex);
+            if (postgres.ConstraintName == "IX_Products_CompanyId_Barcode")
+                throw new InvalidOperationException("Barcode or SKU already belongs to another product.", ex);
             throw new InvalidOperationException("A record with the same SKU or email already exists.", ex);
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation })

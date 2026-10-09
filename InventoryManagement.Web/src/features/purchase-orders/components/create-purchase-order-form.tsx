@@ -10,6 +10,7 @@ import {
 } from "../schemas/purchase-order-schema";
 import { useSuppliers } from "@/features/suppliers/hooks/use-suppliers";
 import { ProductSelect } from "@/features/products/components/product-select";
+import { ProductScanner } from "@/features/scanning/product-scanner";
 import { WarehouseSelect } from "@/features/warehouses/components/warehouse-select";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
@@ -108,6 +109,17 @@ export function CreatePurchaseOrderForm() {
           <WarehouseSelect id="warehouseId" {...form.register("warehouseId")} />
         </FormField>
       </section>
+      <ProductScanner disabled={mutation.isPending || form.formState.isSubmitting} onSelect={product => {
+        const current = form.getValues("items");
+        let index = current.findIndex(item => item.productId === product.id);
+        if (index < 0) index = current.findIndex(item => !item.productId);
+        if (index >= 0) {
+          form.setValue(`items.${index}.productId`, product.id, { shouldDirty: true, shouldValidate: true });
+          form.setFocus(`items.${index}.quantity`);
+        } else if (current.length < 100) {
+          append({ productId: product.id, quantity: 1, unitPrice: 0 }, { focusName: `items.${current.length}.quantity` });
+        } else form.setError("items", { message: m.orders.maxItems });
+      }} />
       <section className="panel overflow-hidden">
         <div className="flex items-center justify-between border-b border-line px-7 py-5">
           <h2 className="text-sm font-semibold">{m.orders.items}</h2>

@@ -10,10 +10,13 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@bwip-js/browser": "4.11.4",
     "@hookform/resolvers": "^5.9.1",
     "@microsoft/signalr": "^10.0.11",
     "@reduxjs/toolkit": "^2.12.0",
     "@tanstack/react-query": "^5.102.8",
+    "@zxing/browser": "0.2.1",
+    "@zxing/library": "0.23.0",
     "exceljs": "^4.4.0",
     "keycloak-js": "^26.2.4",
     "lucide-react": "^1.38.0",

@@ -6,6 +6,8 @@ import {
   useCompanyText,
 } from "@/features/companies/company-provider";
 import { Preferences } from "./preferences";
+import { AssistantWidget } from "@/features/assistant/assistant-widget";
+import { OnboardingTour, OnboardingTourLauncher } from "@/features/onboarding/onboarding-tour";
 import { NotificationCenter } from "@/features/realtime/realtime-provider";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { AuthGate } from "@/features/auth/components/auth-gate";
@@ -23,6 +25,7 @@ import {
   PanelTop,
   BookOpen,
   History,
+  ScanLine,
 } from "lucide-react";
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -48,6 +51,7 @@ export function AppShell({
     { href: "/products", label: m.nav.products, icon: Package },
     { href: "/warehouses", label: m.nav.warehouses, icon: Warehouse },
     { href: "/stocks", label: m.nav.stocks, icon: Boxes },
+    { href: "/scan", label: t("QR / barkod okut", "Scan QR / barcode"), icon: ScanLine },
     { href: "/suppliers", label: m.nav.suppliers, icon: UsersRound },
     { href: "/purchase-orders", label: m.nav.orders, icon: ClipboardList },
   ];
@@ -62,6 +66,8 @@ export function AppShell({
     label: t("Bilgi kaynakları", "Knowledge resources"),
     icon: BookOpen,
   });
+  if (company && ["Owner", "Manager"].includes(company.role))
+    nav.push({ href: "/imports", label: t("Toplu veri aktarımı", "Bulk data import"), icon: ArrowUpRight });
   if (company && ["Owner", "Manager"].includes(company.role))
     nav.push({
       href: "/activity",
@@ -79,13 +85,15 @@ export function AppShell({
       label: t("Platform yönetimi", "Platform administration"),
       icon: PanelTop,
     });
+  if (auth.admin)
+    nav.push({ href: "/admin/monitoring", label: t("Sistem izleme", "System monitoring"), icon: History });
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const open = useAppSelector((s) => s.inventoryUi.sidebarOpen);
   const current =
     pathname === "/account"
       ? { href: "/account", label: m.auth.account }
-      : (nav.find((n) => n.href !== "/" && pathname.startsWith(n.href)) ?? nav[0]);
+      : (nav.filter((n) => n.href !== "/" && pathname.startsWith(n.href)).sort((a, b) => b.href.length - a.href.length)[0] ?? nav[0]);
   if (auth.status !== "authenticated") {
     return (
       <div className="flex min-h-screen flex-col bg-subtle">
@@ -122,14 +130,14 @@ export function AppShell({
     );
   }
   return (
-    <div className="min-h-screen">
+    <div data-tour-shell className="min-h-screen">
       <a
         href="#main-content"
         className="fixed left-4 top-4 z-50 -translate-y-24 rounded bg-surface p-3 focus:translate-y-0"
       >
         {m.app.skip}
       </a>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[244px] flex-col overflow-y-auto bg-sidebar px-4 text-on-brand lg:flex">
+      <aside data-tour-scroll className="fixed inset-y-0 left-0 z-40 hidden w-[244px] flex-col overflow-y-auto bg-sidebar px-4 text-on-brand lg:flex">
         <Link href="/" className="flex items-center gap-3 px-3 py-9">
           <div className="grid size-10 place-items-center rounded-xl border border-sidebar-muted/25">
             <Boxes className="size-6" strokeWidth={1.5} />
@@ -151,6 +159,7 @@ export function AppShell({
             <Link
               key={href}
               href={href}
+              data-tour-nav={href}
               aria-current={current.href === href ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-4 py-3 text-[13px] transition-colors",
@@ -168,6 +177,7 @@ export function AppShell({
           ))}
         </nav>
         <div className="mt-auto px-4 pb-7">
+          <OnboardingTourLauncher className="my-4 text-sidebar-muted hover:bg-sidebar-active hover:text-on-brand" />
           <div className="mb-6 border-t border-sidebar-muted/15" />
           <p className="text-xs text-sidebar-muted">
             {auth.status === "authenticated" ? auth.name : m.app.footer}
@@ -235,10 +245,12 @@ export function AppShell({
                 <button onClick={() => auth.logout()}>{m.auth.logout}</button>
               </div>
             )}
+            <div className="col-span-2"><OnboardingTourLauncher className="text-muted hover:bg-brand-soft hover:text-brand" /></div>
             {nav.map((n) => (
               <Link
                 key={n.href}
                 href={n.href}
+                data-tour-nav={n.href}
                 onClick={() => dispatch(setSidebarOpen(false))}
                 aria-current={current.href === n.href ? "page" : undefined}
                 className={cn(
@@ -259,6 +271,8 @@ export function AppShell({
         >
           <AuthGate>{children}</AuthGate>
         </main>
+        <AssistantWidget />
+        <OnboardingTour />
       </div>
     </div>
   );

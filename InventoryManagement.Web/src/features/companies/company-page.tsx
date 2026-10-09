@@ -277,7 +277,7 @@ export function CompanyPage() {
               "You become the owner. Your other company memberships remain available.",
             )}
           </p>
-          <form onSubmit={create} className="space-y-3">
+          <form data-tour="first-company" onSubmit={create} className="space-y-3">
             <label className="block space-y-2 text-sm">
               {t("Şirket adı", "Company name")}
               <Input

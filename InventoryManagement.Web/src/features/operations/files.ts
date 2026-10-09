@@ -41,6 +41,9 @@ export async function exportRows(
   sheet.columns.forEach((c) => {
     c.width = 24;
   });
+  sheet.columns.forEach((c, i) => {
+    if (["Sku", "Barcode", "OrderKey", "Email", "SupplierEmail", "WarehouseName"].includes(headers[i])) c.numFmt = "@";
+  });
   sheet.autoFilter = {
     from: { row: 1, column: 1 },
     to: { row: Math.max(1, rows.length + 1), column: headers.length },
@@ -54,6 +57,8 @@ export async function exportRows(
   );
 }
 function parseCsv(text: string): string[][] {
+  const firstLine = text.split(/\r?\n/, 1)[0];
+  const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
   const rows: string[][] = [];
   let row: string[] = [],
     cell = "",
@@ -66,7 +71,7 @@ function parseCsv(text: string): string[][] {
         i++;
       } else if (quoted || cell === "") quoted = !quoted;
       else throw new Error("CSV: invalid quote / geçersiz tırnak");
-    } else if (c === "," && !quoted) {
+    } else if (c === delimiter && !quoted) {
       row.push(cell);
       cell = "";
     } else if ((c === "\n" || c === "\r") && !quoted) {
@@ -117,9 +122,7 @@ function checkArchive(buffer: ArrayBuffer) {
       view.getUint16(p + 32, true);
   }
 }
-export async function readProducts(
-  file: File,
-): Promise<{ name: string; sku: string }[]> {
+export async function readImportRows(file: File, expectedHeaders: string[], optionalHeaders: string[] = []): Promise<Record<string, string>[]> {
   if (file.size > 1024 * 1024) throw new Error("Maximum 1 MB / En fazla 1 MB");
   let rows: string[][];
   if (file.name.toLowerCase().endsWith(".csv"))
@@ -150,16 +153,15 @@ export async function readProducts(
     });
   } else throw new Error("Choose CSV or XLSX / CSV veya XLSX seçin");
   const header = rows.shift()?.map((v) => v.trim().toLowerCase()) ?? [];
-  const name = header.indexOf("name"),
-    sku = header.indexOf("sku");
-  if (name < 0 || sku < 0)
-    throw new Error(
-      "Required columns: Name, Sku / Gerekli sütunlar: Name, Sku",
-    );
+  if (new Set(header).size !== header.length || expectedHeaders.some(h => !optionalHeaders.includes(h) && !header.includes(h.toLowerCase())) || header.some(h => !expectedHeaders.some(e => e.toLowerCase() === h)))
+    throw new Error(`Required columns / Gerekli sütunlar: ${expectedHeaders.join(", ")}`);
   if (rows.length < 1 || rows.length > 1000)
     throw new Error("Provide 1-1000 rows / 1-1000 satır gerekli");
-  return rows.map((r) => ({
-    name: (r[name] ?? "").trim(),
-    sku: (r[sku] ?? "").trim(),
-  }));
+  return rows.map(r => {
+    if (r.length > header.length) throw new Error("Extra columns in row / Satırda fazladan sütun var");
+    return Object.fromEntries(expectedHeaders.map(h => [h[0].toLowerCase() + h.slice(1), (r[header.indexOf(h.toLowerCase())] ?? "").trim()]));
+  });
+}
+export async function readProducts(file: File): Promise<{ name: string; sku: string }[]> {
+  return (await readImportRows(file, ["Name", "Sku"])).map(r => ({ name: r.name, sku: r.sku }));
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { ProductSelect } from "@/features/products/components/product-select";
+import { ProductScanner } from "@/features/scanning/product-scanner";
 import { WarehouseSelect } from "@/features/warehouses/components/warehouse-select";
 import { ApiError } from "@/lib/api/api-error";
 import { applyApiFieldErrors } from "@/lib/forms/apply-api-errors";
@@ -69,6 +70,11 @@ export function TransferStockForm() {
           {error}
         </Alert>
       )}
+      <ProductScanner disabled={mutation.isPending || form.formState.isSubmitting} onSelect={product => {
+        mutation.reset();
+        form.setValue("productId", product.id, { shouldValidate: true, shouldDirty: true });
+        form.setFocus("quantity");
+      }} />
       <FormField
         label={m.common.product}
         htmlFor="productId"

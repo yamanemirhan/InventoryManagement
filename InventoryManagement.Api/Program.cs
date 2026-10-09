@@ -8,7 +8,11 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
+builder.AddInventoryTelemetry();
 builder.Services.AddOperations();
+builder.Services.AddSingleton<InventoryManagement.Application.Monitoring.IMonitoringDiagnostics, MonitoringDiagnostics>();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Observability:OtlpEndpoint"]))
+    builder.Services.AddHostedService<BusinessMetricsWorker>();
 
 // Add services to the container.
 
@@ -19,7 +23,8 @@ builder.Services.AddHealthChecks();
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<InventoryManagement.Api.Realtime.WorkspaceConnections>();
-builder.Services.AddHostedService<InventoryManagement.Api.Realtime.WorkspaceEventDispatcher>();
+if (builder.Configuration.GetValue("Operations:RunDispatchers", true))
+    builder.Services.AddHostedService<InventoryManagement.Api.Realtime.WorkspaceEventDispatcher>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<InventoryManagement.Application.Common.Interfaces.ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<CompanyContext>();
@@ -47,7 +52,8 @@ builder.Services.AddApplication();
 
 
 
-builder.Services.AddHostedService<InvitationEmailDispatcher>();
+if (builder.Configuration.GetValue("Operations:RunDispatchers", true))
+    builder.Services.AddHostedService<InvitationEmailDispatcher>();
 
 var app = builder.Build();
 

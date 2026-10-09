@@ -76,6 +76,7 @@ export async function apiClient<T>(
       detail,
       getValidationErrors(payload),
       typeof payload.code === "string" ? payload.code : undefined,
+      response.status === 429 ? Math.min(86400, Math.max(1, Number(response.headers.get("Retry-After")) || 60)) : undefined,
     );
   }
   throw new ApiError(
