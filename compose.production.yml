@@ -17,6 +17,9 @@ services:
       AiChat__FreeTierConfirmed: ${AI_CHAT_FREE_TIER_CONFIRMED:-false}
       AiChat__ApiKey: ${AI_CHAT_API_KEY:-}
       AiChat__Model: ${AI_CHAT_MODEL:-gemini-3.8-flash}
+      AiChat__GroqApiKey: ${AI_CHAT_GROQ_API_KEY:-}
+      AiChat__GroqFreeTierConfirmed: ${AI_CHAT_GROQ_FREE_TIER_CONFIRMED:-false}
+      AiChat__GroqModel: ${AI_CHAT_GROQ_MODEL:-openai/gpt-oss-120b}
       Observability__OtlpEndpoint: ${OBSERVABILITY_OTLP_ENDPOINT:-}
       Observability__Environment: ${OBSERVABILITY_ENVIRONMENT:-production}
       Observability__PrometheusUrl: ${OBSERVABILITY_PROMETHEUS_URL:-}

@@ -4,6 +4,8 @@ internal static class ErrorMessages
 {
  private static readonly IReadOnlyDictionary<string,string> Turkish = new Dictionary<string,string>
  {
+  ["The cloud provider's quota is exhausted. Local company retrieval remains available."] = "Bulut sağlayıcısının kotası doldu. Yerel şirket araması kullanılabilir.",
+  ["The application's daily cloud limit was reached. Local company retrieval remains available."] = "Uygulamanın günlük bulut limiti doldu. Yerel şirket araması kullanılabilir.",
   ["The assistant's free quota is temporarily exhausted. Try again later."] = "Asistanın ücretsiz kotası geçici olarak doldu. Daha sonra tekrar deneyin.",
   ["The assistant is busy. Try again shortly."] = "Asistan meşgul. Kısa bir süre sonra tekrar deneyin.",
   ["The assistant is not enabled yet."] = "Asistan henüz etkinleştirilmedi.",

@@ -21,7 +21,7 @@ public sealed class TelemetryBehavior<TRequest, TResponse> : IPipelineBehavior<T
         catch (Exception ex)
         {
             outcome = ex switch { ConcurrencyException => "conflict", ForbiddenException => "forbidden",
-                InventoryManagement.Application.Assistant.AssistantException { Code: "assistant_quota" or "assistant_busy" } => "throttled",
+                InventoryManagement.Application.Assistant.AssistantException { Code: "assistant_quota" or "assistant_provider_quota" or "assistant_daily_limit" or "assistant_busy" } => "throttled",
                 InventoryManagement.Application.Assistant.AssistantException { Code: "assistant_blocked" } => "rejected",
                 InventoryManagement.Application.Assistant.AssistantException => "unavailable",
                 ValidationException or DomainException or InvalidOperationException => "rejected", KeyNotFoundException => "not_found", _ => "error" };
