@@ -19,11 +19,13 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 
         if (exception is AssistantException assistant)
         {
-            var status = assistant.Code is "assistant_quota" or "assistant_busy" ? 429 : assistant.Code == "assistant_blocked" ? 422 : 503;
+            var status = assistant.Code is "assistant_quota" or "assistant_provider_quota" or "assistant_daily_limit" or "assistant_busy" ? 429 : assistant.Code == "assistant_blocked" ? 422 : 503;
             if (assistant.RetryAfterSeconds > 0) httpContext.Response.Headers.RetryAfter = assistant.RetryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var message = assistant.Code switch
             {
                 "assistant_quota" => "The assistant's free quota is temporarily exhausted. Try again later.",
+                "assistant_provider_quota" => "The cloud provider's quota is exhausted. Local company retrieval remains available.",
+                "assistant_daily_limit" => "The application's daily cloud limit was reached. Local company retrieval remains available.",
                 "assistant_busy" => "The assistant is busy. Try again shortly.",
                 "assistant_unavailable" => "The assistant is not enabled yet.",
                 "assistant_timeout" => "The assistant took too long. Try again shortly.",

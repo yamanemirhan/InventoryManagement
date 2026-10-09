@@ -2,6 +2,7 @@ using InventoryManagement.Api.Common.Authentication;
 using InventoryManagement.Application.Assistant;
 using InventoryManagement.Application.Assistant.Commands.SendAssistantMessage;
 using InventoryManagement.Application.Assistant.Queries.GetAssistantConfiguration;
+using InventoryManagement.Application.Assistant.Queries.GetAssistantInsights;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,4 +23,8 @@ public sealed class AssistantController(ISender sender) : ControllerBase
     [RequestSizeLimit(65536)]
     public async Task<ActionResult<AssistantReply>> Send(SendAssistantMessageCommand command, CancellationToken ct) =>
         Ok(await sender.Send(command, ct));
+
+    [HttpGet("insights")]
+    public async Task<ActionResult<AssistantInsights>> Insights([FromQuery] string locale = "tr", [FromQuery] string page = "overview", CancellationToken ct = default) =>
+        Ok(await sender.Send(new GetAssistantInsightsQuery(locale, page), ct));
 }

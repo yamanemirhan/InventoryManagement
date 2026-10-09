@@ -7,6 +7,7 @@ import {
 } from "@/features/companies/company-provider";
 import { Preferences } from "./preferences";
 import { AssistantWidget } from "@/features/assistant/assistant-widget";
+import { PageInsights } from "@/features/assistant/page-insights";
 import { OnboardingTour, OnboardingTourLauncher } from "@/features/onboarding/onboarding-tour";
 import { NotificationCenter } from "@/features/realtime/realtime-provider";
 import { useAuth } from "@/features/auth/components/auth-provider";
@@ -269,7 +270,7 @@ export function AppShell({
           id="main-content"
           className="mx-auto max-w-[1440px] space-y-7 px-5 py-8 sm:px-9 sm:py-10"
         >
-          <AuthGate>{children}</AuthGate>
+          <AuthGate><PageInsights />{children}</AuthGate>
         </main>
         <AssistantWidget />
         <OnboardingTour />

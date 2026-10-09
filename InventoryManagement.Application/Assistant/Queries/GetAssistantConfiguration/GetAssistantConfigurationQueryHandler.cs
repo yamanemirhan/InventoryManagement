@@ -5,5 +5,10 @@ public sealed class GetAssistantConfigurationQueryHandler(IChatAssistant assista
     : IRequestHandler<GetAssistantConfigurationQuery, AssistantConfiguration>
 {
     public Task<AssistantConfiguration> Handle(GetAssistantConfigurationQuery request, CancellationToken ct)
-    { AssistantAccess.Check(company); return Task.FromResult(assistant.GetConfiguration()); }
+    {
+        AssistantAccess.Check(company);
+        var cloud = assistant.GetConfiguration();
+        return Task.FromResult(cloud with { Available = true, CloudAvailable = cloud.Available,
+            CompanyCloudAvailable = cloud.Available && cloud.Provider == "Groq" });
+    }
 }

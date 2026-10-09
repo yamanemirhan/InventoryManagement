@@ -8,7 +8,7 @@ public sealed class SendAssistantMessageCommandValidator : AbstractValidator<Sen
         RuleFor(x => x.Page).Must(x => x is "overview" or "products" or "warehouses" or "stocks" or "stock-receipt"
             or "stock-transfer" or "suppliers" or "purchases" or "reports" or "imports" or "scan" or "companies" or "knowledge" or "other")
             .WithMessage("Invalid assistant page context.");
-        RuleFor(x => x.ExternalProcessingAccepted).Equal(true).WithMessage("Accept external AI processing before sending.");
+        RuleFor(x => x.Mode).Must(x => x is "company" or "guide").WithMessage("Invalid assistant mode.");
         RuleFor(x => x.Messages).Custom((messages, context) =>
         {
             if (messages is null || messages.Count is < 1 or > 11 || messages.Count % 2 != 1)

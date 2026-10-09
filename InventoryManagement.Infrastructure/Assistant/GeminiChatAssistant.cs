@@ -22,6 +22,7 @@ public sealed class GeminiChatAssistant(IHttpClientFactory clients, IOptions<Ass
     public async Task<AssistantReply> ReplyAsync(AssistantConversation conversation, string subjectId, CancellationToken ct)
     {
         if (!GetConfiguration().Available) throw new AssistantException("assistant_unavailable");
+        if (conversation.Context is not null) throw new AssistantException("company_cloud_not_configured");
         using var lease = budget.Acquire(subjectId);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(35));
@@ -38,7 +39,12 @@ public sealed class GeminiChatAssistant(IHttpClientFactory clients, IOptions<Ass
                 generationConfig = new { maxOutputTokens = 2048, thinkingConfig = new { thinkingLevel = "low", includeThoughts = false } },
             });
             using var response = await clients.CreateClient("assistant").SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-            if (response.StatusCode == HttpStatusCode.TooManyRequests) throw new AssistantException("assistant_quota", 60);
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                var error = await AssistantProviderResponse.QuotaAsync(response, timeout.Token);
+                budget.Pause("gemini", error.RetryAfterSeconds);
+                throw error;
+            }
             if (!response.IsSuccessStatusCode) throw new AssistantException("assistant_provider_error");
             using var document = await ReadBoundedAsync(response.Content, timeout.Token);
             var root = document.RootElement;
@@ -105,7 +111,7 @@ public sealed class GeminiChatAssistant(IHttpClientFactory clients, IOptions<Ass
         - Bulk import: Owner/Manager uses CSV/XLSX templates, up to 1000 rows/1 MB, previews/errors, then confirms an atomic import. Product Barcode is optional text preserving leading zeros. Import catalogs first. Stock imports only create opening stock for new product/warehouse pairs, never overwrite existing stock. OrderKey groups draft purchase rows within one file.
         - Purchases: draft, order, partial receipts, cancellation and supplier returns; no automatic receipt merely from draft creation.
         - Reports & counts: choose warehouse, review physical counts, minimum stock and movement history. Minimum 0 disables that alert. Review quantities and provide a reason before confirming a count.
-        - Knowledge resources currently store documents for future RAG; you cannot retrieve them yet.
+        - My company mode retrieves current company stock and published Knowledge resources locally; this generic guide mode cannot access them.
         - Platform administration/monitoring is for platform Admin only, not company Managers. Owner/Manager can manage catalogs; Viewer reads only.
         - WhatsApp/SMS, billing and automatic AI notifications are not enabled. Do not pretend they are available.
         Keep answers useful and normally under 250 words. For permission issues, suggest checking the current company/role rather than bypassing authorization.

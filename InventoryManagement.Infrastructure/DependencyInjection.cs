@@ -22,7 +22,10 @@ public static class DependencyInjection
         services.AddHttpClient("monitoring", client => { client.Timeout = TimeSpan.FromSeconds(8); client.DefaultRequestHeaders.Accept.ParseAdd("application/json"); });
         services.Configure<InventoryManagement.Infrastructure.Assistant.AssistantOptions>(configuration.GetSection("AiChat"));
         services.AddSingleton<InventoryManagement.Infrastructure.Assistant.AssistantBudget>();
-        services.AddScoped<InventoryManagement.Application.Assistant.IChatAssistant, InventoryManagement.Infrastructure.Assistant.GeminiChatAssistant>();
+        services.AddScoped<InventoryManagement.Infrastructure.Assistant.GeminiChatAssistant>();
+        services.AddScoped<InventoryManagement.Infrastructure.Assistant.GroqChatAssistant>();
+        services.AddScoped<InventoryManagement.Application.Assistant.IChatAssistant, InventoryManagement.Infrastructure.Assistant.ConfiguredChatAssistant>();
+        services.AddScoped<InventoryManagement.Application.Assistant.IAssistantContextReader, AssistantContextReader>();
         services.AddHttpClient("assistant", client => client.Timeout = TimeSpan.FromSeconds(35))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
             .RemoveAllLoggers();

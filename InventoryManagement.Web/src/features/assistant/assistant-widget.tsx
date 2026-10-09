@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Sparkles, X } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -21,10 +21,21 @@ function AssistantSession({ companyId, companyName }: { companyId: string; compa
   const t = useCompanyText();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [question, setQuestion] = useState({ text: "", revision: 0 });
   const launcher = useRef<HTMLButtonElement>(null);
   const close = useCallback(() => { setOpen(false); launcher.current?.focus(); }, []);
+  useEffect(() => {
+    const handle = (event: Event) => {
+      const detail = (event as CustomEvent<{ companyId: string; question: string }>).detail;
+      if (detail?.companyId !== companyId || typeof detail.question !== "string") return;
+      setQuestion(previous => ({ text: detail.question.slice(0, 2000), revision: previous.revision + 1 }));
+      setMounted(true); setOpen(true);
+    };
+    window.addEventListener("invo-question", handle);
+    return () => window.removeEventListener("invo-question", handle);
+  }, [companyId]);
   return <>
-    {mounted && <AssistantPanel open={open} onClose={close} companyId={companyId} companyName={companyName} />}
+    {mounted && <AssistantPanel key={question.revision} initialPrompt={question.text} open={open} onClose={close} companyId={companyId} companyName={companyName} />}
     <button ref={launcher} data-tour="assistant" type="button" onClick={() => { setMounted(true); setOpen(!open); }} aria-expanded={open}
       aria-controls="invo-chat-panel" aria-label={open ? t("Invo sohbetini kapat", "Close Invo chat") : t("Invo ile konuş", "Chat with Invo")}
       className="invo-launcher fixed bottom-[max(20px,env(safe-area-inset-bottom))] right-5 z-50 flex h-14 items-center gap-3 rounded-full border border-brand/30 bg-surface px-5 text-ink shadow-xl transition hover:-translate-y-0.5 hover:border-brand sm:right-7">
