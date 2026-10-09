@@ -25,7 +25,7 @@ function AssistantSession({ companyId, companyName }: { companyId: string; compa
   const close = useCallback(() => { setOpen(false); launcher.current?.focus(); }, []);
   return <>
     {mounted && <AssistantPanel open={open} onClose={close} companyId={companyId} companyName={companyName} />}
-    <button ref={launcher} type="button" onClick={() => { setMounted(true); setOpen(!open); }} aria-expanded={open}
+    <button ref={launcher} data-tour="assistant" type="button" onClick={() => { setMounted(true); setOpen(!open); }} aria-expanded={open}
       aria-controls="invo-chat-panel" aria-label={open ? t("Invo sohbetini kapat", "Close Invo chat") : t("Invo ile konuş", "Chat with Invo")}
       className="invo-launcher fixed bottom-[max(20px,env(safe-area-inset-bottom))] right-5 z-50 flex h-14 items-center gap-3 rounded-full border border-brand/30 bg-surface px-5 text-ink shadow-xl transition hover:-translate-y-0.5 hover:border-brand sm:right-7">
       <span className="invo-orb grid size-9 place-items-center rounded-full bg-brand text-on-brand">{open ? <X className="size-4" /> : <Sparkles className="size-5" />}</span>

@@ -14,6 +14,7 @@ A multi-company inventory and purchasing application built with ASP.NET Core and
 - QR/barcode product lookup by camera, USB reader or image; stock-form selection and printable/downloadable product labels.
 - Email/password and optional Google sign-in, verified email invitations, custom account screens and SignalR updates.
 - Turkish/English UI, responsive layouts and light/dark themes.
+- First-visit guided tour: animated highlights, up to 10 role-aware steps, keyboard controls, skip and menu restart.
 - Admin-only server/container dashboard, OpenTelemetry logs/traces/metrics and safe staging diagnostics.
 - Invo: a floating Turkish/English AI assistant with optional Gemini integration, explicit data-sharing consent and bounded free-tier usage.
 
@@ -121,6 +122,10 @@ Use **Scan QR / barcode** (`/scan`), the product list, or stock receipt/transfer
 Owners/Managers can add a manufacturer barcode when creating or editing a product, or import the optional text-formatted `Barcode` column. Leading zeros are significant; UPC-A and zero-prefixed EAN-13 codes are treated as equivalent. Download/print QR and Code 128 labels from product details. QR labels contain a versioned company/product ID and survive SKU changes; foreign-company labels are rejected. Raw barcode/SKU lookup uses the selected company. Ambiguous codes are rejected rather than choosing a product. Scanned URLs are never opened automatically.
 
 Supported readers: QR, EAN-8/13, UPC-A/E, Code 128/39, ITF and Data Matrix. Camera accuracy depends on lighting, focus and code size. The reader and lookup API can be reused for a future mobile app.
+
+## First-visit guide
+
+New users receive a short company-setup hint, followed by a workspace tour after selecting a company (up to 10 steps; import guidance is for Owners/Managers). The tour highlights existing controls without navigating, submitting forms or changing data. Skip/finish is remembered per account and tour version in this browser's local storage; another browser or cleared storage shows it again. Restart from **App tour** in the desktop/mobile menu. Keyboard focus stays in the tour, Escape skips, and reduced-motion preferences disable animations. Automatic tours avoid edit/detail pages and active forms.
 
 ## Invo assistant
 

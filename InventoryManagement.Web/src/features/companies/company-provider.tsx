@@ -84,7 +84,7 @@ export function CompanySwitcher() {
   const t = useCompanyText();
   if (!session?.companies.length) return null;
   return (
-    <label className="flex min-w-0 items-center gap-2 text-xs">
+    <label data-tour="company" className="flex min-w-0 items-center gap-2 text-xs">
       <span className="sr-only">{t("Aktif şirket", "Active company")}</span>
       <select
         className="field max-w-[220px] truncate"

@@ -1,4 +1,9 @@
 @import "tailwindcss";
+.tour-spotlight { border: 2px solid var(--brand); box-shadow: 0 0 0 9999px rgb(5 15 18 / .66), 0 0 0 5px color-mix(in srgb, var(--brand) 20%, transparent); transition: top .22s ease, left .22s ease, width .22s ease, height .22s ease; }
+.tour-card { transition: top .22s ease, left .22s ease; }
+.tour-step { animation: tour-enter .22s ease-out; }
+@keyframes tour-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .tour-spotlight, .tour-card { transition: none; } .tour-step { animation: none; } }
 .invo-launcher { box-shadow: 0 8px 32px color-mix(in srgb, var(--brand) 18%, transparent); }
 .invo-orb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 12%, transparent); }
 .invo-header { background: linear-gradient(130deg, var(--brand-soft), var(--surface) 75%); }
